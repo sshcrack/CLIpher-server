@@ -14,7 +14,7 @@
     "babel-plugin-styled-components": "^1.13.2",
     "babel-plugin-transform-typescript-metadata": "^0.3.2",
     "crypto-random-string": "^4.0.0",
-    "debug": "^2.6.9",
+    "debug": "^4.3.2",
     "dotenv-webpack": "^7.0.3",
     "nerdamer": "^1.1.12",
     "next": "11.0.1",
@@ -26,7 +26,7 @@
     "react-dom": "17.0.2",
     "reflect-metadata": "^0.1.13",
     "sass": "^1.36.0",
-    "supports-color": "^5.5.0",
+    "supports-color": "^9.0.2",
     "typeorm": "^0.2.35",
     "webpack-bundle-analyzer": "^4.4.2"
   },
