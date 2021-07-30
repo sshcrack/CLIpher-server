@@ -7,4 +7,7 @@ export class EncryptionTokenSQL {
 
     @Column()
     token: string
+
+    @Column()
+    ip: string
 }

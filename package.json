@@ -16,7 +16,7 @@
     "crypto-random-string": "^4.0.0",
     "debug": "^2.6.9",
     "dotenv-webpack": "^7.0.3",
-    "math-expression-evaluator": "^1.3.8",
+    "nerdamer": "^1.1.12",
     "next": "11.0.1",
     "next-compose-plugins": "^2.2.1",
     "next-img": "^0.3.2",
@@ -26,6 +26,7 @@
     "react-dom": "17.0.2",
     "reflect-metadata": "^0.1.13",
     "sass": "^1.36.0",
+    "supports-color": "^5.5.0",
     "typeorm": "^0.2.35",
     "webpack-bundle-analyzer": "^4.4.2"
   },

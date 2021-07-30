@@ -1,6 +1,6 @@
 import debugConstr from "debug"
 import CryptoRandomString from "./commonjs-libs/crypto-random-string"
-import { getTime } from "./database/util"
+import { getTime } from "./util"
 
 const debug = debugConstr("Token-Generator")
 export function generateToken() {
@@ -8,7 +8,7 @@ export function generateToken() {
     const measureStart = getTime()
     const token = CryptoRandomString.generate({
         type: "ascii-printable",
-        length: 32
+        length: 64
     })
 
     const now = getTime()

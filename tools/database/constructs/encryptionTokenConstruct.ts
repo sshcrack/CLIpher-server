@@ -2,10 +2,9 @@
 import "reflect-metadata";
 
 import { Repository } from "typeorm";
-console.log("Import from Encryption Token")
 import { EncryptionTokenSQL } from "../entities/EncryptionToken";
 import debugConstr from "debug"
-import { getTokenExpiration } from "../util";
+import { getTokenExpiration } from "../../util";
 
 const debug = debugConstr("Encryption Repo")
 const tokenExpiration = getTokenExpiration()
@@ -23,7 +22,7 @@ export class EncryptionTokenConstruct {
         return this.repo.findOne({ username })
     }
 
-    public async addToken(username: string, token: string) {
+    public async addToken({username, ip, token}: EncryptionTokenSQL) {
         const exists = await this.exists(username)
         if (exists)
             return EncryptionResult.TOKEN_ALREADY_GENERATED
@@ -32,6 +31,7 @@ export class EncryptionTokenConstruct {
         const sql = new EncryptionTokenSQL();
         sql.token = token
         sql.username = username
+        sql.ip = ip
 
         await this.repo.save(sql)
 
