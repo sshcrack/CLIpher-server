@@ -123,8 +123,17 @@ export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorRe
     return ip === undefined
 }
 
-export async function checkDBConnection<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
     const currentConn = Global._database
+    if(!currentConn)
+        res
+            .status(HttpStatusCode.INTERNAL_SERVER_ERROR)
+            .json({
+                message: "Database connection not available",
+                error: ErrorCodes.DB_CONNECTION_NOT_AVAILABLE
+            })
+
+    return currentConn === undefined
 }
 export async function runChecks<T, X extends string>({ method, requiredFields, checks, ip }: CheckArguments<X>, req: NextApiRequest, res: NextApiResponse<T>) {
     const noIPLength = 4

@@ -24,6 +24,7 @@ export default async function handler(
   const rightRequest = runChecks({
     method: "POST",
     requiredFields: ["username"],
+    ip: true,
     checks: [
       {
         name: "username",
