@@ -1,7 +1,9 @@
 import { Database } from "./database";
+import { RateLimit } from "./rate-limit";
 
 export class Global {
-    static _database: Database | undefined;
+    static _database: Database | undefined
+
     static async getDatabase() {
         if(this._database)
             return this._database

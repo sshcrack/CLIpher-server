@@ -15,7 +15,7 @@ const debug = debugConstr("Validators")
  * @param toCheck What objects to check the length of
  * @returns Weither the requirements met or not
  */
-export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const body = req.body
 
     let invalidFields: MaxLengthInterface[] = []
@@ -60,7 +60,7 @@ export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest
  * @param res Response object from nextjs handler
  * @returns If the given method matches the request method
  */
-export function checkMethod<T, X extends string>(method: AvailableMethods<X>, req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export function checkMethod<T, X extends string>(method: AvailableMethods<X>, req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     if (req.method === method)
         return true
 
@@ -80,7 +80,7 @@ export function checkMethod<T, X extends string>(method: AvailableMethods<X>, re
  * @param res Response object from nextjs handler
  * @returns Weither the body contains all required fields
  */
-export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const body = req.body
     const keys = Object.keys(body)
 
@@ -110,7 +110,7 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
  * @param res NextJS Response object
  * @returns Weither the socket hang up
  */
-export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const ip = getIP(req)
     if (!ip)
         res
@@ -123,7 +123,7 @@ export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorRe
     return ip === undefined
 }
 
-export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const currentConn = Global._database
     if(!currentConn)
         res

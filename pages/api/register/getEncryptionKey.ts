@@ -4,9 +4,11 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import "reflect-metadata";
 import { generateRSAKeypair } from "../../../tools/crypto/RSA";
 import { Global } from '../../../tools/global';
-import { EncryptionKeyResponse, ErrorResponse } from '../../../tools/interfaces/APIInterfaces';
+import { APIError, EncryptionKeyResponse, ErrorResponse } from '../../../tools/interfaces/APIInterfaces';
 import ErrorCodes from "../../../tools/interfaces/error-codes";
 import HttpStatusCode from "../../../tools/interfaces/status-codes";
+import { RateLimit } from "../../../tools/rate-limit";
+import { ConsumeType } from "../../../tools/rate-limit/interface";
 import { getIP } from "../../../tools/util";
 import { runChecks } from "../../../tools/validators";
 
@@ -14,12 +16,16 @@ import { runChecks } from "../../../tools/validators";
 const debug = debugConstr("API - EncryptionKey")
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<EncryptionKeyResponse | ErrorResponse>
+  res: NextApiResponse<EncryptionKeyResponse | APIError>
 ) {
   const userIP = getIP(req)
 
   const { username } = req.body
   const { encryptionKey } = await Global.getDatabase() ?? {}
+
+  const isRatelimited = await RateLimit.consume(ConsumeType.EncryptionKey, req, res)
+  if(isRatelimited)
+    return
 
   const rightRequest = runChecks({
     method: "POST",

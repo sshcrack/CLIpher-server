@@ -1,11 +1,20 @@
-import { ScreamingSnakeCase } from "type-fest"
-import { Merge } from "type-fest"
+import { Merge, ScreamingSnakeCase } from "type-fest"
 import ErrorCodes from "./error-codes"
 
 export interface ErrorResponse {
     error: ErrorCodes,
     message: string
 }
+
+export interface RateLimitResponse extends ErrorResponse {
+    error: ErrorCodes.RATE_LIMITED,
+    message: "Too many requests. Try again later.",
+    retryAfter: number
+    limit: number,
+    reset: number
+}
+
+export type APIError = ErrorResponse | RateLimitResponse
 
 export interface EncryptionKeyResponse {
     publicKey: string
@@ -33,3 +42,7 @@ export interface ValueInterface<T> {
 }
 
 export type MaxLengthInterface = Merge<ValueInterface<string>, { maxLength: number }>
+
+export type JSONObject<K extends string | number, T> = {
+    [key in K]: T
+}
