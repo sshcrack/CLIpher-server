@@ -1,4 +1,4 @@
-import { Database } from "./util";
+import { Database } from "./database";
 
 export class Global {
     static _database: Database | undefined;

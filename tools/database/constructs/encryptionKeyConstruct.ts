@@ -2,47 +2,49 @@
 import "reflect-metadata";
 
 import { Repository } from "typeorm";
-import { EncryptionTokenSQL } from "../entities/EncryptionToken";
+import { EncryptionKeySQL } from "../entities/EncryptionToken";
 import debugConstr from "debug"
-import { getTokenExpiration } from "../../util";
+import { getKeyExpiration } from "../../util";
 
-const debug = debugConstr("Encryption Repo")
-const tokenExpiration = getTokenExpiration()
+const debug = debugConstr("Encryption Key Repo")
+const tokenExpiration = getKeyExpiration()
 
 
-export class EncryptionTokenConstruct {
-    private repo: Repository<EncryptionTokenSQL>
+export class EncryptionKeyConstruct {
+    private repo: Repository<EncryptionKeySQL>
 
-    constructor(repo: Repository<EncryptionTokenSQL>) {
+    constructor(repo: Repository<EncryptionKeySQL>) {
         this.repo = repo
     }
 
-    public getToken(username: string) {
+    public getKey(username: string) {
         debug(`Finding token of user ${username}`)
         return this.repo.findOne({ username })
     }
 
-    public async addToken({username, ip, token}: EncryptionTokenSQL) {
+    public async addKey({ username, ip, key, priv }: EncryptionKeySQL) {
         const exists = await this.exists(username)
         if (exists)
             return EncryptionResult.TOKEN_ALREADY_GENERATED
 
         debug(`Adding token of user ${username}`)
-        const sql = new EncryptionTokenSQL();
-        sql.token = token
-        sql.username = username
-        sql.ip = ip
+        const toSave = {
+            username,
+            ip,
+            key,
+            priv
+        }
 
-        await this.repo.save(sql)
+        await this.repo.save(toSave)
 
         setTimeout(() => {
-            this.removeToken(username)
+            this.removeKey(username)
         }, tokenExpiration)
         return EncryptionResult.SUCCESS
     }
 
-    public async removeToken(username: string) {
-        debug(`Deleting token of user ${username}`)
+    public async removeKey(username: string) {
+        debug(`Deleting key of user ${username}`)
         const deletionRes = await this.repo.delete({
             username: username
         })

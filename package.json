@@ -27,12 +27,14 @@
     "reflect-metadata": "^0.1.13",
     "sass": "^1.36.0",
     "supports-color": "^9.0.2",
+    "type-fest": "^1.2.3",
     "typeorm": "^0.2.35",
     "webpack-bundle-analyzer": "^4.4.2"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/math-expression-evaluator": "^1.2.1",
+    "@types/node-forge": "^0.10.2",
     "@types/react": "17.0.15",
     "eslint": "7.31.0",
     "eslint-config-next": "11.0.1",

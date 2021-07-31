@@ -1,8 +1,11 @@
 import debugConstr from "debug";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AvailableMethods, CheckInterface, ErrorResponse } from "./interfaces/APIInterfaces";
+import { Global } from "./global";
+import { AvailableMethods, CheckInterface, ErrorResponse, MaxLengthInterface } from "./interfaces/APIInterfaces";
 import ErrorCodes from "./interfaces/error-codes";
 import HttpStatusCode from "./interfaces/status-codes";
+import { CheckArguments, IFunctionArgs, IFunctions } from "./interfaces/validatorInterfaces";
+import { getIP } from "./util";
 
 const debug = debugConstr("Validators")
 
@@ -12,22 +15,39 @@ const debug = debugConstr("Validators")
  * @param toCheck What objects to check the length of
  * @returns Weither the requirements met or not
  */
-export function checkMaxLength<T>(req: NextApiRequest, toCheck: CheckInterface<T>[]) {
+export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
     const body = req.body
 
-    let requirementsMet = true
+    let invalidFields: MaxLengthInterface[] = []
     toCheck.forEach(curr => {
         const { name, maxLength } = curr
         const currValue = body[name]
 
         if (!currValue.length)
-            return debug("Couldn't check field", name, ": length property not found ")
+            return debug("📌 Couldn't check field", name, ": length property not found ")
 
         if (currValue.length <= maxLength)
             return
 
-        requirementsMet = false
+        invalidFields.push({
+            name: name,
+            value: currValue,
+            maxLength: maxLength
+        })
     })
+
+    const requirementsMet = invalidFields.length === 0
+    if (!requirementsMet) {
+        const formattedList = invalidFields
+            .map(e => `Name: ${e.name} MaxLength: ${e.maxLength}`)
+            .join(", ")
+        res
+            .status(HttpStatusCode.BAD_REQUEST)
+            .json({
+                error: ErrorCodes.INVALID_BODY_LENGTH,
+                message: `Invalid length of following fields: ${formattedList}`
+            })
+    }
 
     return requirementsMet
 }
@@ -40,7 +60,7 @@ export function checkMaxLength<T>(req: NextApiRequest, toCheck: CheckInterface<T
  * @param res Response object from nextjs handler
  * @returns If the given method matches the request method
  */
-export function checkMethod<T>(method: AvailableMethods, req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+export function checkMethod<T, X extends string>(method: AvailableMethods<X>, req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
     if (req.method === method)
         return true
 
@@ -82,4 +102,68 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
     })
 
     return false
+}
+
+/**
+ * Check if the socket hang up
+ * @param req NextJS Request object
+ * @param res NextJS Response object
+ * @returns Weither the socket hang up
+ */
+export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+    const ip = getIP(req)
+    if (!ip)
+        res
+            .status(HttpStatusCode.FORBIDDEN)
+            .json({
+                message: "Socket hang up",
+                error: ErrorCodes.SOCKET_CLOSED
+            })
+
+    return ip === undefined
+}
+
+export async function checkDBConnection<T>(req: NextApiRequest, res: NextApiResponse<T | ErrorResponse>) {
+    const currentConn = Global._database
+}
+export async function runChecks<T, X extends string>({ method, requiredFields, checks, ip }: CheckArguments<X>, req: NextApiRequest, res: NextApiResponse<T>) {
+    const noIPLength = 4
+    const withIPLength = 5 // Just noIPLength plus one, but cant do that bc typescript
+
+    const funcLength = ip ? withIPLength : noIPLength
+    const functions: IFunctions<typeof withIPLength> = [
+        checkMethod,
+        checkBody,
+        checkDBConnection,
+        checkMaxLength,
+        checkIP
+    ]
+
+    const functionArgs: IFunctionArgs<typeof withIPLength, X> = [
+        [
+            method
+        ],
+        [
+            requiredFields
+        ],
+        [
+            checks
+        ],
+        [],
+        []
+    ]
+
+    let invalid = false
+    for (let i = 0; i < funcLength; i++) {
+        const func = functions[i]
+        const args = functionArgs[i]
+
+        invalid = await func(...args, req, res)
+
+        //Breaking because multiple responses could be sent
+        if (invalid)
+            break
+    }
+
+    return invalid
 }

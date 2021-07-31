@@ -1,12 +1,15 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-@Entity("encryption_token")
-export class EncryptionTokenSQL {
+@Entity("encryption_key")
+export class EncryptionKeySQL {
     @PrimaryColumn()
     username: string
 
     @Column()
-    token: string
+    key: string
+
+    @Column()
+    priv: string
 
     @Column()
     ip: string
