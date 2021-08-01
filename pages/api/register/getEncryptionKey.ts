@@ -40,16 +40,8 @@ export default async function handler(
     ],
   }, req, res)
 
-  if (!rightRequest)
+  if (!rightRequest || !userIP)
     return
-
-  if (!userIP)
-    return res
-      .status(HttpStatusCode.FORBIDDEN)
-      .json({
-        message: "Socket hang up",
-        error: ErrorCodes.SOCKET_CLOSED
-      })
 
   //TODO Check if username is available from account sql
 
@@ -78,7 +70,7 @@ export default async function handler(
     expiresAt: keyExpiration,
     ip: userIP
   })
-  
+
   res.send({
     publicKey,
     expiresAt: keyExpiration
