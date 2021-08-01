@@ -1,5 +1,7 @@
 import { Database } from "./database";
+import debugConstr from "debug"
 
+const debug = debugConstr("Global")
 export class Global {
     static _database: Database | undefined
 
@@ -8,11 +10,12 @@ export class Global {
             return this._database
 
         const database = new Database()
+        this._database = database
         await database.getConnection()
 
-        this._database = database
         return database
     }
 }
 
+debug("Initializing database...")
 Global.getDatabase()

@@ -1,5 +1,5 @@
 import { FixedLengthArray, ValueOf } from "type-fest";
-import { AvailableMethods, CheckInterface } from "./APIInterfaces";
+import { AvailableMethods, CheckInterface } from "../interfaces/APIInterfaces";
 
 export interface CheckArguments<X extends string> {
     method: AvailableMethods<X>,

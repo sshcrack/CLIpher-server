@@ -4,7 +4,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible"
 import { APIError } from "../interfaces/APIInterfaces"
 import ErrorCodes from "../interfaces/error-codes"
 import HttpStatusCode from "../interfaces/status-codes"
-import { sendErrorResponse } from "../responses/errorResponse"
+import { sendErrorResponse } from "../responses"
 import { getIP, getRateLimitHeaders, setHeaders } from "../util"
 import { ConsumeType, CostInterface } from "./interface"
 

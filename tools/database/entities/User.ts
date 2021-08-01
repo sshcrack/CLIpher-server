@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-@Entity("accounts")
-export class AccountSQL {
+@Entity("user")
+export class UserSQL {
     @PrimaryColumn()
     id: number
 
@@ -11,7 +11,7 @@ export class AccountSQL {
     hashedPassword: string
 
     @Column()
-    encryptedPrivKey: string
+    encryptedPrivateKey: string
 
     @Column()
     publicKey: string

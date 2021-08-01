@@ -9,7 +9,7 @@ export class EncryptionKeySQL {
     key: string
 
     @Column()
-    priv: string
+    privateKey: string
 
     @Column()
     expiresAt: number

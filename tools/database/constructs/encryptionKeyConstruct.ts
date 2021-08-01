@@ -6,7 +6,7 @@ import { EncryptionKeySQL } from "../entities/EncryptionToken";
 import debugConstr from "debug"
 import { getKeyExpiration } from "../../util";
 
-const debug = debugConstr("Encryption Key Repo")
+const debug = debugConstr("Repository:EncryptionKey")
 const tokenExpiration = getKeyExpiration()
 
 
@@ -25,28 +25,29 @@ export class EncryptionKeyConstruct {
         return this.repo.findOne({ username })
     }
 
-    public async addKey(toSave: EncryptionKeySQL) {
-        const { username } = toSave
-        const exists = await this.exists(username)
+    public addKey(toSave: EncryptionKeySQL) {
+        return new Promise((resolve, reject) => {
+            const { username } = toSave
 
-        if (exists)
-            return EncryptionResult.TOKEN_ALREADY_GENERATED
+            debug(`🔑 Adding token of user ${username}`)
+            this.repo.save(toSave).then(() => {
+                const currSchedule = this.TimeoutIDs[username]
+                if (currSchedule)
+                    clearTimeout(currSchedule)
 
-        debug(`🔑 Adding token of user ${username}`)
-        await this.repo.save(toSave)
-        
-        const currSchedule = this.TimeoutIDs[username]
-        if(currSchedule)
-            clearTimeout(currSchedule)
+                this.TimeoutIDs[username] = setTimeout(async () => {
+                    const removeRes = await this.removeKey(username)
 
-        this.TimeoutIDs[username] = setTimeout(async () => {
-            const removeRes = await this.removeKey(username)
+                    if (!removeRes)
+                        debug("💥 Failed to remove key")
 
-            if(!removeRes)
-                debug("🥴 Failed to remove key")
-        }, tokenExpiration)
-        
-        return EncryptionResult.SUCCESS
+                    resolve(EncryptionResult.SUCCESS)
+                }, tokenExpiration)
+            }).catch(e => {
+                debug("💥 Couldn't add key", e.message)
+                resolve(EncryptionResult.ERROR)
+            })
+        });
     }
 
     public async removeKey(username: string) {
@@ -65,7 +66,6 @@ export class EncryptionKeyConstruct {
 }
 
 export enum EncryptionResult {
-    SUCCESS = 0,
-    USERNAME_EXISTS = 1,
-    TOKEN_ALREADY_GENERATED = 2
+    SUCCESS,
+    ERROR
 }

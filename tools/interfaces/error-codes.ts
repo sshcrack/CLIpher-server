@@ -1,19 +1,22 @@
-enum ErrorCodes {
-    METHOD_NOT_ALLOWED,
-    USERNAME_OR_PASSWORD_NOT_GIVEN,
-    SOCKET_CLOSED,
-    REQUESTED_FROM_OTHER_IP,
-    INVALID_BODY_LENGTH,
-    DB_CONNECTION_NOT_AVAILABLE,
-    TYPE_NOT_FOUND,
-    RATE_LIMITED,
+export enum FormattedError {
     FIELDS_NOT_AVAILABLE,
-    LIMITER_NOT_AVAILABLE
+    INVALID_BODY_LENGTH,
+    METHOD_NOT_ALLOWED,
+    RATE_LIMITED,
+    USER_EXISTS,
 }
 
-export type GeneralErrorList = ErrorCodes.DB_CONNECTION_NOT_AVAILABLE | ErrorCodes.REQUESTED_FROM_OTHER_IP 
-                               ErrorCodes.SOCKET_CLOSED | ErrorCodes.TYPE_NOT_FOUND |
-                               ErrorCodes.USERNAME_OR_PASSWORD_NOT_GIVEN |
-                               ErrorCodes.LIMITER_NOT_AVAILABLE
+export enum GeneralError {
+    DB_CONNECTION_NOT_AVAILABLE,
+    ERROR_GENERATING_KEY_PAIR,
+    LIMITER_NOT_AVAILABLE,
+    REQUESTED_FROM_OTHER_IP,
+    SOCKET_CLOSED,
+    TOKEN_NOT_FOUND,
+    TYPE_NOT_FOUND,
+    USERNAME_OR_PASSWORD_NOT_GIVEN,
+    USER_EXISTS
+}
 
+type ErrorCodes = FormattedError | GeneralError
 export default ErrorCodes

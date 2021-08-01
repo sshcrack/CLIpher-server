@@ -1,8 +1,8 @@
 import debugConstr from "debug"
-import CryptoRandomString from "./commonjs-libs/crypto-random-string"
-import { getTime } from "./util"
+import CryptoRandomString from "../commonjs-libs/crypto-random-string"
+import { getTime } from "../util"
 
-const debug = debugConstr("Token-Generator")
+const debug = debugConstr("TokenGenerator")
 export function generateToken() {
     debug(`🕑 Requesting to generate token...`)
     const measureStart = getTime()

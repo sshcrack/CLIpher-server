@@ -2,11 +2,13 @@
 import "reflect-metadata";
 
 import debugConstr from "debug";
-import { promises as fs } from "fs";
-import { Connection, createConnection, getConnection, Repository } from "typeorm";
+import { Connection, createConnection, getConnection, getRepository } from "typeorm";
 import { EncryptionKeyConstruct } from "./constructs/encryptionKeyConstruct";
-import { AccountSQL } from "./entities/Account";
 import { EncryptionKeySQL } from "./entities/EncryptionToken";
+import { UserSQL } from "./entities/User";
+import { UserConstruct } from "./constructs/userConstruct"
+
+
 
 
 
@@ -23,16 +25,35 @@ const {
  * @description Datbase class to interact with the database
  */
 export class Database {
+    private connectionPromise: Promise<Connection | undefined>
     private connection: Connection | void
-    private encryptionKeyRepo: Repository<EncryptionKeySQL>
 
-    public encryptionKey: EncryptionKeyConstruct;
+    public EncryptionKey: EncryptionKeyConstruct;
+    public User: UserConstruct;
+
     /**
      * Establishes a connection to the database or returns the existing connection
+     * @note This is just a wrapper of an internal function to prevent multiple instances connecting
      * @returns a connection to the database
      */
     async getConnection() {
+        if (this.connectionPromise) {
+            debug("⏰ There's already a connection in process. Waiting for it to finish")
+            await this.connectionPromise
+        }
 
+        const prom = this.getConnectionPromise()
+        this.connectionPromise = prom;
+
+        const res = await prom;
+        return res;
+    }
+
+    /**
+     * 
+     * @returns A promise of the conn
+     */
+    private async getConnectionPromise() {
         if (this.connection)
             return this.connection
 
@@ -40,12 +61,12 @@ export class Database {
         try {
             oldConnection = getConnection()
         } catch (e) {
-            debug("😵 Could not get connection")
+            //Swallowing error because we are just checking if the connection exists
         }
 
         if (oldConnection) {
-            debug("🔌 Closing connection")
-            await oldConnection.close()
+            debug("👋 Closing connection")
+            await oldConnection.close().catch(e => debug("💥 Couldn't close connection", e.message))
         }
 
         debug("⏱ Establishing connection...")
@@ -59,16 +80,16 @@ export class Database {
             synchronize: true,
             logging: ["error", "warn", "info"],
             logger: "debug",
-            entities: [AccountSQL, EncryptionKeySQL]
-        }).catch(e => debug("🥴 Database connection failed", e))
+            entities: [UserSQL, EncryptionKeySQL]
+        }).catch(e => debug("💥 Database connection failed", e.message))
 
         if (!this.connection)
             return undefined
 
         debug("💾 Established connection!")
         debug("⏱ Initializing repositories...")
-        this.encryptionKeyRepo = this.connection.getRepository(EncryptionKeySQL)
-        this.encryptionKey = new EncryptionKeyConstruct(this.encryptionKeyRepo)
+        this.EncryptionKey = new EncryptionKeyConstruct(getRepository(EncryptionKeySQL))
+        this.User = new UserConstruct(getRepository(UserSQL))
 
         debug("📕 Repositories initialized.")
         return this.connection

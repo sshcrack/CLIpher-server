@@ -4,7 +4,7 @@ import { Global } from "../global";
 import { APIError, AvailableMethods, CheckInterface, MaxLengthInterface } from "../interfaces/APIInterfaces";
 import ErrorCodes from "../interfaces/error-codes";
 import { CheckArguments, IFunctionArgs, IFunctions } from "./interface";
-import { sendErrorResponse } from "../responses/errorResponse";
+import { sendErrorResponse } from "../responses";
 import { getIP } from "../util";
 
 const debug = debugConstr("Validators")
@@ -13,7 +13,7 @@ const debug = debugConstr("Validators")
  * Checks if the request body met the requirements
  * @param req The request object
  * @param toCheck What objects to check the length of
- * @returns Weither the requirements met or not
+ * @returns if the check succeeded
  */
 export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const body = req.body
@@ -57,7 +57,7 @@ export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest
  * @param method The method that is allowed
  * @param req Request object from nextjs handler
  * @param res Response object from nextjs handler
- * @returns If the given method matches the request method
+ * @returns the check succeeded
  */
 export function checkMethod<T, X extends string>(method: AvailableMethods<X>, req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     if (req.method === method)
@@ -76,7 +76,7 @@ export function checkMethod<T, X extends string>(method: AvailableMethods<X>, re
  * @param requiredFields Required Fields
  * @param req Request object from nextjs handler
  * @param res Response object from nextjs handler
- * @returns Weither the body contains all required fields
+ * @returns If the check succeeded
  */
 export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const body = req.body
@@ -115,12 +115,18 @@ export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIErro
     return ip === undefined
 }
 
+/**
+ * Checks if a db connection is available
+ * @param _req NextJS request object
+ * @param res NextJS response
+ * @returns If the check succeeded
+ */
 export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const currentConn = Global._database
-    if(!currentConn)
+    if (!currentConn)
         sendErrorResponse(res, ErrorCodes.DB_CONNECTION_NOT_AVAILABLE)
 
-    return currentConn === undefined
+    return currentConn !== undefined
 }
 export async function runChecks<T, X extends string>({ method, requiredFields, checks, ip }: CheckArguments<X>, req: NextApiRequest, res: NextApiResponse<T>) {
     const noIPLength = 4
@@ -149,17 +155,17 @@ export async function runChecks<T, X extends string>({ method, requiredFields, c
         []
     ]
 
-    let invalid = false
+    let valid = true
     for (let i = 0; i < funcLength; i++) {
         const func = functions[i]
         const args = functionArgs[i]
 
-        invalid = await func(...args, req, res)
+        valid = await func(...args, req, res)
 
         //Breaking because multiple responses could be sent
-        if (invalid)
+        if (!valid)
             break
     }
 
-    return invalid
+    return valid
 }
