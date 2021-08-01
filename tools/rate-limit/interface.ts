@@ -1,11 +1,13 @@
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 export enum ConsumeType {
-    EncryptionKey = "EncryptionKey",
-    Register = "Register",
-    TFA = "TFA"
+    EncryptionKey,
+    Register,
+    TFA,
 }
 
-export interface CostInterface {
-    cost: number,
-    retries: number
+export interface CostInterface<T> {
+    type: T,
+    retries: number,
+    limiter?: RateLimiterMemory
 }

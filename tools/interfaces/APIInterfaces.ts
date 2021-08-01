@@ -1,4 +1,4 @@
-import { Merge, ScreamingSnakeCase } from "type-fest"
+import { LiteralUnion, Merge, ScreamingSnakeCase } from "type-fest"
 import ErrorCodes from "./error-codes"
 
 export interface ErrorResponse {
@@ -17,7 +17,8 @@ export interface RateLimitResponse extends ErrorResponse {
 export type APIError = ErrorResponse | RateLimitResponse
 
 export interface EncryptionKeyResponse {
-    publicKey: string
+    publicKey: string,
+    expiresAt: number
 }
 
 export interface EncryptionTokenBody {
@@ -32,9 +33,9 @@ export interface CheckInterface {
 /**
  * Make sure that Method name is in SCREAMING CASE
  */
-export type AvailableMethods<T extends string> = "GET" | "HEAD" | "POST"
+export type AvailableMethods<T extends string> = LiteralUnion<"GET" | "HEAD" | "POST"
     | "PUT" | "DELETE" | "CONNECT"
-    | "OPTIONS" | "TRACE" | ScreamingSnakeCase<T>
+    | "OPTIONS" | "TRACE", ScreamingSnakeCase<T>>
 
 export interface ValueInterface<T> {
     name: string,

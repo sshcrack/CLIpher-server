@@ -1,11 +1,11 @@
 import debugConstr from "debug";
 import { NextApiRequest, NextApiResponse } from "next";
-import { Global } from "./global";
-import { AvailableMethods, CheckInterface, ErrorResponse, MaxLengthInterface } from "./interfaces/APIInterfaces";
-import ErrorCodes from "./interfaces/error-codes";
-import HttpStatusCode from "./interfaces/status-codes";
-import { CheckArguments, IFunctionArgs, IFunctions } from "./interfaces/validatorInterfaces";
-import { getIP } from "./util";
+import { Global } from "../global";
+import { APIError, AvailableMethods, CheckInterface, MaxLengthInterface } from "../interfaces/APIInterfaces";
+import ErrorCodes from "../interfaces/error-codes";
+import { CheckArguments, IFunctionArgs, IFunctions } from "./interface";
+import { sendErrorResponse } from "../responses/errorResponse";
+import { getIP } from "../util";
 
 const debug = debugConstr("Validators")
 
@@ -41,12 +41,11 @@ export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest
         const formattedList = invalidFields
             .map(e => `Name: ${e.name} MaxLength: ${e.maxLength}`)
             .join(", ")
-        res
-            .status(HttpStatusCode.BAD_REQUEST)
-            .json({
-                error: ErrorCodes.INVALID_BODY_LENGTH,
-                message: `Invalid length of following fields: ${formattedList}`
-            })
+
+        sendErrorResponse(res, {
+            error: ErrorCodes.INVALID_BODY_LENGTH,
+            invalidFields: formattedList
+        })
     }
 
     return requirementsMet
@@ -64,10 +63,9 @@ export function checkMethod<T, X extends string>(method: AvailableMethods<X>, re
     if (req.method === method)
         return true
 
-    const status = res.status(HttpStatusCode.METHOD_NOT_ALLOWED)
-    status.json({
+    sendErrorResponse(res, {
         error: ErrorCodes.METHOD_NOT_ALLOWED,
-        message: `${method} Method not allowed`
+        method: req.method
     })
 
     return false
@@ -95,10 +93,9 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
     if (matches)
         return true
 
-    const status = res.status(HttpStatusCode.BAD_REQUEST)
-    status.json({
-        error: ErrorCodes.METHOD_NOT_ALLOWED,
-        message: `Required field not available: ${notIncluded.join(", ")}`
+    sendErrorResponse(res, {
+        error: ErrorCodes.FIELDS_NOT_AVAILABLE,
+        missing: notIncluded.join(", ")
     })
 
     return false
@@ -113,12 +110,7 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
 export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const ip = getIP(req)
     if (!ip)
-        res
-            .status(HttpStatusCode.FORBIDDEN)
-            .json({
-                message: "Socket hang up",
-                error: ErrorCodes.SOCKET_CLOSED
-            })
+        sendErrorResponse(res, ErrorCodes.SOCKET_CLOSED)
 
     return ip === undefined
 }
@@ -126,12 +118,7 @@ export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIErro
 export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const currentConn = Global._database
     if(!currentConn)
-        res
-            .status(HttpStatusCode.INTERNAL_SERVER_ERROR)
-            .json({
-                message: "Database connection not available",
-                error: ErrorCodes.DB_CONNECTION_NOT_AVAILABLE
-            })
+        sendErrorResponse(res, ErrorCodes.DB_CONNECTION_NOT_AVAILABLE)
 
     return currentConn === undefined
 }

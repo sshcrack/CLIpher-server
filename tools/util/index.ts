@@ -2,7 +2,7 @@ import debugConstr from "debug";
 import nerdamer from "nerdamer";
 import { NextApiRequest, NextApiResponse } from "next";
 import { RateLimiterRes } from "rate-limiter-flexible";
-import { JSONObject } from "./interfaces/APIInterfaces";
+import { JSONObject } from "../interfaces/APIInterfaces";
 
 
 const debug = debugConstr("Util")
@@ -25,7 +25,17 @@ export function getKeyExpiration() {
 }
 
 /**
- * Get the current time
+ * Gets when the key expires from now
+ */
+export function getKeyExpirationDate() {
+    const millis = getKeyExpiration()
+    const now = getTime()
+
+    return new Date(now + millis).getTime()
+}
+
+/**
+ * Get the time value in milliseconds
  * @returns Current time
  */
 export function getTime() {

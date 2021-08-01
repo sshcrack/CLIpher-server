@@ -1,38 +1,41 @@
+import debugConstr from "debug"
 import { NextApiRequest, NextApiResponse } from "next"
 import { RateLimiterMemory } from "rate-limiter-flexible"
-import { APIError, ErrorResponse, JSONObject, RateLimitResponse } from "../interfaces/APIInterfaces"
-import { ConsumeType, CostInterface } from "./interface"
-import debugConstr from "debug"
-import { getIP, getRateLimitHeaders, setHeaders } from "../util"
-import HttpStatusCode from "../interfaces/status-codes"
+import { APIError } from "../interfaces/APIInterfaces"
 import ErrorCodes from "../interfaces/error-codes"
-import { diff } from "nerdamer"
+import HttpStatusCode from "../interfaces/status-codes"
+import { sendErrorResponse } from "../responses/errorResponse"
+import { getIP, getRateLimitHeaders, setHeaders } from "../util"
+import { ConsumeType, CostInterface } from "./interface"
 
 const debug = debugConstr("RateLimiter")
 export class RateLimit {
     static instance: RateLimit = new RateLimit()
 
-    private costs: JSONObject<ConsumeType, CostInterface> = {
-        EncryptionKey: {
-            cost: 2,
+    private limiterDuration = 60 * 1000
+    private limiters: CostInterface<ConsumeType>[] = [
+        {
+            type: ConsumeType.EncryptionKey,
             retries: 2
         },
-        Register: {
-            cost: 2,
-            retries: 2
+        {
+            type: ConsumeType.Register,
+            retries: 1
         },
-        TFA: {
-            cost: 1,
+        {
+            type: ConsumeType.TFA,
             retries: 5
         }
-    }
+    ].map(e => {
+        const obj: CostInterface<ConsumeType> = {
+            ...e,
+            limiter: new RateLimiterMemory({
+                points: e.retries,
+                duration: this.limiterDuration
+            })
+        }
 
-    private points = Object.values(this.costs)
-        .reduce((a, b) => a + b.cost * b.retries, 0)
-
-    private generationLimiter = new RateLimiterMemory({
-        points: this.points,
-        duration: 60 * 1000,
+        return obj
     })
 
     /**
@@ -43,38 +46,30 @@ export class RateLimit {
      * @returns Weither the client is rate limited or not
      */
     static async consume<T>(type: ConsumeType, req: NextApiRequest, res: NextApiResponse<T | APIError>) {
-        debug("🖊 Consuming", type, "...")
         const instance = RateLimit.instance;
-
-        const { generationLimiter, costs, points } = instance
-
-        const cost = costs[type]
         const ip = getIP(req)
+        const { limiters } = instance
 
-        if (!ip) {
-            debug("🔌 IP not found")
-            res.status(HttpStatusCode.BAD_REQUEST).json({
-                message: "Socket Hang Up.",
-                error: ErrorCodes.SOCKET_CLOSED
-            })
-            return true
-        }
-
-        if (!cost) {
+        const limiterInformation = limiters.find(e => e.type === type)
+        if (!limiterInformation) {
             debug("🌵 Type", type, "not found")
-            res
-                .status(HttpStatusCode.INTERNAL_SERVER_ERROR)
-                .json({
-                    message: "The consumation type for the rate limiter could not be found.",
-                    error: ErrorCodes.TYPE_NOT_FOUND,
-                })
+            sendErrorResponse(res, ErrorCodes.TYPE_NOT_FOUND)
             return true
         }
 
+        const { limiter, retries } = limiterInformation
+        if (!limiter)
+            sendErrorResponse(res, ErrorCodes.LIMITER_NOT_AVAILABLE)
+        if (!ip)
+            sendErrorResponse(res, ErrorCodes.SOCKET_CLOSED)
 
-        const result = await generationLimiter.consume(ip, cost.cost)
+        if (!limiter || !ip)
+            return true
+
+
+        const result = await limiter.consume(ip, 1)
             .catch(result => {
-                const headers = getRateLimitHeaders(result, points)
+                const headers = getRateLimitHeaders(result, retries)
 
                 setHeaders(headers, res)
                 res

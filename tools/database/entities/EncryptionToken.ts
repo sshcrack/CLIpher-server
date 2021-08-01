@@ -12,5 +12,8 @@ export class EncryptionKeySQL {
     priv: string
 
     @Column()
+    expiresAt: number
+
+    @Column()
     ip: string
 }

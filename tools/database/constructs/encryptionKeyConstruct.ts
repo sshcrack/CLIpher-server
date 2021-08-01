@@ -13,6 +13,9 @@ const tokenExpiration = getKeyExpiration()
 export class EncryptionKeyConstruct {
     private repo: Repository<EncryptionKeySQL>
 
+    //Ids of scheduled key removal functions
+    private TimeoutIDs: { [key: string]: NodeJS.Timeout } = {}
+
     constructor(repo: Repository<EncryptionKeySQL>) {
         this.repo = repo
     }
@@ -22,29 +25,32 @@ export class EncryptionKeyConstruct {
         return this.repo.findOne({ username })
     }
 
-    public async addKey({ username, ip, key, priv }: EncryptionKeySQL) {
+    public async addKey(toSave: EncryptionKeySQL) {
+        const { username } = toSave
         const exists = await this.exists(username)
+
         if (exists)
             return EncryptionResult.TOKEN_ALREADY_GENERATED
 
-        debug(`Adding token of user ${username}`)
-        const toSave = {
-            username,
-            ip,
-            key,
-            priv
-        }
-
+        debug(`🔑 Adding token of user ${username}`)
         await this.repo.save(toSave)
+        
+        const currSchedule = this.TimeoutIDs[username]
+        if(currSchedule)
+            clearTimeout(currSchedule)
 
-        setTimeout(() => {
-            this.removeKey(username)
+        this.TimeoutIDs[username] = setTimeout(async () => {
+            const removeRes = await this.removeKey(username)
+
+            if(!removeRes)
+                debug("🥴 Failed to remove key")
         }, tokenExpiration)
+        
         return EncryptionResult.SUCCESS
     }
 
     public async removeKey(username: string) {
-        debug(`Deleting key of user ${username}`)
+        debug(`🗑️ Deleting key of user ${username}`)
         const deletionRes = await this.repo.delete({
             username: username
         })

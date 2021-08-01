@@ -1,5 +1,4 @@
 import { Database } from "./database";
-import { RateLimit } from "./rate-limit";
 
 export class Global {
     static _database: Database | undefined
@@ -15,3 +14,5 @@ export class Global {
         return database
     }
 }
+
+Global.getDatabase()

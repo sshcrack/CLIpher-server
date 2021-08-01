@@ -60,12 +60,10 @@ export class Database {
             logging: ["error", "warn", "info"],
             logger: "debug",
             entities: [AccountSQL, EncryptionKeySQL]
-        }).catch(e => fs.writeFile("errors.log", e))
+        }).catch(e => debug("🥴 Database connection failed", e))
 
-        if (!this.connection) {
-            debug("🥴 Database connection failed")
+        if (!this.connection)
             return undefined
-        }
 
         debug("💾 Established connection!")
         debug("⏱ Initializing repositories...")
