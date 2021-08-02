@@ -2,7 +2,7 @@ import debugConstr from "debug";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Global } from "../global";
 import { APIError, AvailableMethods, CheckInterface, MaxLengthInterface } from "../interfaces/APIInterfaces";
-import ErrorCodes from "../interfaces/error-codes";
+import ErrorCodes, { FormattedError, GeneralError } from "../interfaces/error-codes";
 import { CheckArguments, IFunctionArgs, IFunctions } from "./interface";
 import { sendErrorResponse } from "../responses";
 import { getIP } from "../util";
@@ -43,7 +43,7 @@ export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest
             .join(", ")
 
         sendErrorResponse(res, {
-            error: ErrorCodes.INVALID_BODY_LENGTH,
+            error: FormattedError.INVALID_BODY_LENGTH,
             invalidFields: formattedList
         })
     }
@@ -64,7 +64,7 @@ export function checkMethod<T, X extends string>(method: AvailableMethods<X>, re
         return true
 
     sendErrorResponse(res, {
-        error: ErrorCodes.METHOD_NOT_ALLOWED,
+        error: FormattedError.METHOD_NOT_ALLOWED,
         method: req.method
     })
 
@@ -94,7 +94,7 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
         return true
 
     sendErrorResponse(res, {
-        error: ErrorCodes.FIELDS_NOT_AVAILABLE,
+        error: FormattedError.FIELDS_NOT_AVAILABLE,
         missing: notIncluded.join(", ")
     })
 
@@ -105,14 +105,14 @@ export function checkBody<T>(requiredFields: string[], req: NextApiRequest, res:
  * Check if the socket hang up
  * @param req NextJS Request object
  * @param res NextJS Response object
- * @returns Weither the socket hang up
+ * @returns Weither the check succeeded
  */
 export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const ip = getIP(req)
     if (!ip)
-        sendErrorResponse(res, ErrorCodes.SOCKET_CLOSED)
+        sendErrorResponse(res, GeneralError.SOCKET_CLOSED)
 
-    return ip === undefined
+    return ip !== undefined
 }
 
 /**
@@ -124,7 +124,7 @@ export function checkIP<T>(req: NextApiRequest, res: NextApiResponse<T | APIErro
 export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const currentConn = Global._database
     if (!currentConn)
-        sendErrorResponse(res, ErrorCodes.DB_CONNECTION_NOT_AVAILABLE)
+        sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
 
     return currentConn !== undefined
 }
@@ -148,10 +148,10 @@ export async function runChecks<T, X extends string>({ method, requiredFields, c
         [
             requiredFields
         ],
+        [],
         [
             checks
         ],
-        [],
         []
     ]
 

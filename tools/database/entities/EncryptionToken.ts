@@ -12,7 +12,7 @@ export class EncryptionKeySQL {
     privateKey: string
 
     @Column()
-    expiresAt: number
+    expiresAt: Date
 
     @Column()
     ip: string

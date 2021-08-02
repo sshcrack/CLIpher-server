@@ -66,8 +66,10 @@ export class RateLimit {
         if (!limiter || !ip)
             return true
 
+        if(process.env.NODE_ENV === "development")
+            return false
 
-        const result = await limiter.consume(ip, 1)
+        const result = await limiter.consume(ip)
             .catch(result => {
                 const headers = getRateLimitHeaders(result, retries)
 

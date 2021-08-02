@@ -40,7 +40,9 @@ export class UserConstruct {
 
     public async exists(username: string) {
         const user = await this.getByUsername(username)
-        return user !== null;
+
+        debug("User is", user)
+        return user !== null && user !== undefined;
     }
 }
 

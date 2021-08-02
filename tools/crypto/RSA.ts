@@ -1,5 +1,6 @@
-import { pki } from "node-forge"
-import debugConstr from "debug"
+import debugConstr from "debug";
+import { pki } from "node-forge";
+import Parallel from "paralleljs";
 import { getTime } from "../util";
 
 const debug = debugConstr("Crypto:RSA")
@@ -17,56 +18,81 @@ export class RSA {
      * @param privateKeyPEM PEM formatted private key
      * @returns The decrypted string
      */
-    static decrypt(encrypted: string, privateKeyPEM: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            debug("🕐 Decrypting message...")
-            const privateKey = pki.privateKeyFromPem(privateKeyPEM)
-
+    static decrypt(encrypted: string, privateKeyPEM: string): Promise<string | undefined> {
+        return new Promise(resolve => {
+            const worker = new Parallel([encrypted, privateKeyPEM]);
             const start = getTime()
-            let decrypted: string
 
-            try {
-                decrypted = privateKey.decrypt(encrypted)
-            } catch (err) {
+
+            debug("🕐 Decrypting message...")
+            worker.spawn(item => {
+                const { pki } = eval(`require("node-fetch")`)
+
+                const [encrypted, privateKeyPEM] = item
+                const privateKey = pki.privateKeyFromPem(privateKeyPEM)
+
+                let decrypted: string
+
+                try {
+                    decrypted = privateKey.decrypt(encrypted)
+                } catch (err) {
+                    throw new Error(err)
+                }
+
+                return [decrypted]
+            }).then(result => {
+                let [decrypted] = result
+
                 const end = getTime()
                 const ms = end - start
 
-                debug("💥 RSA Decryption failed after", ms, "ms")
-                return reject(err)
-            }
+                debug("🔑 RSA Decryption successful after", ms, "ms")
+                resolve(decrypted)
+            }, err => {
+                const end = getTime()
+                const ms = end - start
 
-            const end = getTime()
-            const ms = end - start
-
-            debug("🔑 RSA Decryption successful after", ms, "ms")
-
-            resolve(decrypted)
+                debug("💥 RSA Decryption failed after", ms, "ms. Error: ", err.message)
+                resolve(undefined)
+            })
         })
     }
 
     static encrypt(message: string, publicKeyPEM: string) {
-        return new Promise((resolve, reject) => {
-            debug("🕐 Encrypting message...")
-            const publicKey = pki.publicKeyFromPem(publicKeyPEM)
-
+        return new Promise(resolve => {
+            const worker = new Parallel([message, publicKeyPEM])
             const start = getTime()
-            let decrypted: string
 
-            try {
-                decrypted = publicKey.encrypt(message)
-            } catch (err) {
+            debug("🕐 Encrypting message...")
+            worker.spawn(item => {
+                const { pki } = eval(`require("node-fetch")`)
+                const [message, publicKeyPEM] = item
+
+                const publicKey = pki.publicKeyFromPem(publicKeyPEM)
+                let encrypted: string
+
+                try {
+                    encrypted = publicKey.encrypt(message)
+                } catch (err) {
+                    throw new Error(err)
+                }
+
+                return [encrypted]
+            }).then(result => {
+                const [encrypted] = result
+
                 const end = getTime()
                 const ms = end - start
 
-                debug("💥 RSA Encryption failed after", ms, "ms")
-                return reject(err)
-            }
+                debug("🔑 RSA Encryption successful after", ms, "ms")
+                resolve(encrypted)
+            }, err => {
+                const end = getTime()
+                const ms = end - start
 
-            const end = getTime()
-            const ms = end - start
-
-            debug("🔑 RSA Encryption successful after", ms, "ms")
-            resolve(decrypted)
+                debug("💥 RSA Encryption failed after", ms, "ms. Error: ", err.message)
+                resolve(undefined)
+            })
         })
     }
 
@@ -74,7 +100,7 @@ export class RSA {
      * Generate a new RSA key pair
      * @returns A generated RSA key pair
      */
-    static generateKeyPair(): Promise<PEMOutput> {
+    static generateKeyPair(): Promise<PEMOutput | undefined> {
         return new Promise((resolve, reject) => {
             debug("🕐 Generating keypair...")
             const start = getTime()
@@ -87,7 +113,7 @@ export class RSA {
 
                 if (err) {
                     debug("💥 RSA Keypair generation failed after", ms, "ms")
-                    return reject(err)
+                    return resolve(undefined)
                 }
 
                 debug("🔑 RSA Keypair generated after", ms, "ms")

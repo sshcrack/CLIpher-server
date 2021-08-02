@@ -1,5 +1,5 @@
 import { LiteralUnion, Merge, ScreamingSnakeCase } from "type-fest"
-import ErrorCodes from "./error-codes"
+import ErrorCodes, { FormattedError, GeneralError } from "./error-codes"
 
 export interface ErrorResponse {
     error: ErrorCodes,
@@ -7,7 +7,7 @@ export interface ErrorResponse {
 }
 
 export interface RateLimitResponse extends ErrorResponse {
-    error: ErrorCodes.RATE_LIMITED,
+    error: FormattedError.RATE_LIMITED,
     message: "Too many requests. Try again later.",
     retryAfter: number
     limit: number,

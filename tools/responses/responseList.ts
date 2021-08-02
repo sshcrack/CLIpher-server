@@ -51,6 +51,51 @@ export const ErrorResponseList: APIErrorExtended[] = [
         error: GeneralError.PASSWORD_TOO_LONG,
         status: HttpStatusCode.BAD_REQUEST,
         message: "Password must be less than or equal to 128 characters."
+    },
+    {
+        error: GeneralError.CANT_DECRYPT_PASSWORD,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not decrypt the password."
+    },
+    {
+        error: GeneralError.CANT_GENERATE_RSA_KEYPAIR,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not generate the rsa key pair."
+    },
+    {
+        error: GeneralError.CANT_HASH_PASSWORD,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not hash password"
+    },
+    {
+        error: GeneralError.CANT_ENCRYPT_PRIVATE_KEY,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Cant encrypt private key"
+    },
+    {
+        error: GeneralError.CANT_GENERATE_IV,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not generate the IV"
+    },
+    {
+        error: GeneralError.USER_CREATION_ERROR,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not create user."
+    },
+    {
+        error: GeneralError.CANT_GENERATE_TFA_SECRET,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not generate the TFA secret."
+    },
+    {
+        error: GeneralError.CANT_ENCRYPT_TFA_SECRET,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not encrypt the TFA secret."
+    },
+    {
+        error: GeneralError.ERROR_ADDING_ENCRYPTION_KEY,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not add the encryption key"
     }
 ]
 

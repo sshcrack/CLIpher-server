@@ -26,10 +26,10 @@ export class EncryptionKeyConstruct {
     }
 
     public addKey(toSave: EncryptionKeySQL) {
-        return new Promise((resolve, reject) => {
+        return new Promise(resolve => {
             const { username } = toSave
 
-            debug(`🔑 Adding token of user ${username}`)
+            debug("🕑 Adding token of user", username)
             this.repo.save(toSave).then(() => {
                 const currSchedule = this.TimeoutIDs[username]
                 if (currSchedule)
@@ -41,8 +41,10 @@ export class EncryptionKeyConstruct {
                     if (!removeRes)
                         debug("💥 Failed to remove key")
 
-                    resolve(EncryptionResult.SUCCESS)
                 }, tokenExpiration)
+
+                debug("🔑 Added token of user", username)
+                resolve(EncryptionResult.SUCCESS)
             }).catch(e => {
                 debug("💥 Couldn't add key", e.message)
                 resolve(EncryptionResult.ERROR)

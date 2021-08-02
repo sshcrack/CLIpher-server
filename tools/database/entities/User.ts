@@ -12,4 +12,13 @@ export class UserSQL {
 
     @Column()
     publicKey: string
+
+    @Column()
+    iv: string
+
+    @Column()
+    TFASecret: string
+
+    @Column({ default: false })
+    TFAVerified: boolean
 }

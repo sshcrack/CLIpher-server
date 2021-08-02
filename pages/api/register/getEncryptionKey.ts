@@ -12,6 +12,8 @@ import { ConsumeType } from "../../../tools/rate-limit/interface";
 import { sendErrorResponse } from "../../../tools/responses";
 import { getIP, getKeyExpirationDate } from "../../../tools/util";
 import { runChecks } from "../../../tools/validators";
+import { Timestamp } from 'typeorm';
+import { EncryptionResult } from '../../../tools/database/constructs/encryptionKeyConstruct';
 
 
 
@@ -41,7 +43,6 @@ export default async function handler(
     ],
   }, req, res)
 
-  debug("Valid request", validRequest)
   if (!validRequest || !userIP)
     return
 
@@ -66,7 +67,7 @@ export default async function handler(
     debug("👥 Duplicate found. Sending...")
     res.send({
       publicKey: exists.key,
-      expiresAt: exists.expiresAt
+      expiresAt: exists.expiresAt.getTime()
     })
 
     return
@@ -81,13 +82,16 @@ export default async function handler(
     return
   }
 
-  await EncryptionKey.addKey({
+  const result = await EncryptionKey.addKey({
     username: username,
     key: publicKey,
     privateKey: privateKey,
-    expiresAt: keyExpiration,
+    expiresAt: new Date(keyExpiration),
     ip: userIP
   })
+
+  if (result !== EncryptionResult.SUCCESS)
+    return sendErrorResponse(res, GeneralError.ERROR_ADDING_ENCRYPTION_KEY)
 
   res.send({
     publicKey,
