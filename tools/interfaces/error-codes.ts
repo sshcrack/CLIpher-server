@@ -15,7 +15,8 @@ export enum GeneralError {
     TOKEN_NOT_FOUND,
     TYPE_NOT_FOUND,
     USERNAME_OR_PASSWORD_NOT_GIVEN,
-    USER_EXISTS
+    USER_EXISTS,
+    PASSWORD_TOO_LONG
 }
 
 type ErrorCodes = FormattedError | GeneralError

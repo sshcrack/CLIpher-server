@@ -2,7 +2,7 @@ import debugConstr from "debug"
 import { NextApiRequest, NextApiResponse } from "next"
 import { RateLimiterMemory } from "rate-limiter-flexible"
 import { APIError } from "../interfaces/APIInterfaces"
-import ErrorCodes from "../interfaces/error-codes"
+import { FormattedError, GeneralError } from "../interfaces/error-codes"
 import HttpStatusCode from "../interfaces/status-codes"
 import { sendErrorResponse } from "../responses"
 import { getIP, getRateLimitHeaders, setHeaders } from "../util"
@@ -53,15 +53,15 @@ export class RateLimit {
         const limiterInformation = limiters.find(e => e.type === type)
         if (!limiterInformation) {
             debug("🌵 Type", type, "not found")
-            sendErrorResponse(res, ErrorCodes.TYPE_NOT_FOUND)
+            sendErrorResponse(res, GeneralError.TYPE_NOT_FOUND)
             return true
         }
 
         const { limiter, retries } = limiterInformation
         if (!limiter)
-            sendErrorResponse(res, ErrorCodes.LIMITER_NOT_AVAILABLE)
+            sendErrorResponse(res, GeneralError.LIMITER_NOT_AVAILABLE)
         if (!ip)
-            sendErrorResponse(res, ErrorCodes.SOCKET_CLOSED)
+            sendErrorResponse(res, GeneralError.SOCKET_CLOSED)
 
         if (!limiter || !ip)
             return true
@@ -75,7 +75,7 @@ export class RateLimit {
                 res
                     .status(HttpStatusCode.TOO_MANY_REQUESTS)
                     .json({
-                        error: ErrorCodes.RATE_LIMITED,
+                        error: FormattedError.RATE_LIMITED,
                         message: "Too many requests. Try again later.",
                         limit: headers["X-RateLimit-Limit"],
                         reset: headers["X-RateLimit-Reset"],

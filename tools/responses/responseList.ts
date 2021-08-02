@@ -46,6 +46,11 @@ export const ErrorResponseList: APIErrorExtended[] = [
         error: GeneralError.USER_EXISTS,
         status: HttpStatusCode.CONFLICT,
         message: "The user already exists."
+    },
+    {
+        error: GeneralError.PASSWORD_TOO_LONG,
+        status: HttpStatusCode.BAD_REQUEST,
+        message: "Password must be less than or equal to 128 characters."
     }
 ]
 

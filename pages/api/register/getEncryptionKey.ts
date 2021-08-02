@@ -1,13 +1,12 @@
 //* Always import reflect-metadata when working with db stuff
 import "reflect-metadata";
 
-
 import debugConstr from "debug";
 import { NextApiRequest, NextApiResponse } from 'next';
 import { RSA } from "../../../tools/crypto/RSA";
 import { Global } from '../../../tools/global';
 import { APIError, EncryptionKeyResponse } from '../../../tools/interfaces/APIInterfaces';
-import ErrorCodes, { GeneralError } from "../../../tools/interfaces/error-codes";
+import { GeneralError } from "../../../tools/interfaces/error-codes";
 import { RateLimit } from "../../../tools/rate-limit";
 import { ConsumeType } from "../../../tools/rate-limit/interface";
 import { sendErrorResponse } from "../../../tools/responses";
@@ -15,7 +14,9 @@ import { getIP, getKeyExpirationDate } from "../../../tools/util";
 import { runChecks } from "../../../tools/validators";
 
 
-const debug = debugConstr("API - EncryptionKey")
+
+
+const debug = debugConstr("API:EncryptionKey")
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<EncryptionKeyResponse | APIError>

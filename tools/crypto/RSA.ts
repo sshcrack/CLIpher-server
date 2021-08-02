@@ -80,8 +80,8 @@ export class RSA {
             const start = getTime()
             rsa.generateKeyPair({
                 bits: 2048,
-                workers: 4
-            }, (err, keypair) => {
+                workers: 4,
+            }, (err, keyPair) => {
                 const end = getTime()
                 const ms = end - start
 
@@ -92,7 +92,7 @@ export class RSA {
 
                 debug("🔑 RSA Keypair generated after", ms, "ms")
 
-                const { publicKey, privateKey } = keypair
+                const { publicKey, privateKey } = keyPair
 
                 const pem = {
                     publicKey: pki.publicKeyToPem(publicKey),
