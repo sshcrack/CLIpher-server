@@ -96,6 +96,31 @@ export const ErrorResponseList: APIErrorExtended[] = [
         error: GeneralError.ERROR_ADDING_ENCRYPTION_KEY,
         status: HttpStatusCode.INTERNAL_SERVER_ERROR,
         message: "Could not add the encryption key"
+    },
+    {
+        error: GeneralError.OTP_NO_USER,
+        status: HttpStatusCode.CONFLICT,
+        message: "Can't validate for an non existing user."
+    },
+    {
+        error: GeneralError.TFA_ALREADY_VERIFIED,
+        status: HttpStatusCode.CONFLICT,
+        message: "You have already verified your two factor authentication"
+    },
+    {
+        error: GeneralError.INVALID_LOGIN,
+        status: HttpStatusCode.UNAUTHORIZED,
+        message: "Username/password is wrong."
+    },
+    {
+        error: GeneralError.CANT_DECRYPT_TFA_SECRET,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not decrypt the TFA secret."
+    },
+    {
+        error: GeneralError.WRONG_TFA_CODE,
+        status: HttpStatusCode.UNAUTHORIZED,
+        message: "You have entered the wrong 2FA Code"
     }
 ]
 

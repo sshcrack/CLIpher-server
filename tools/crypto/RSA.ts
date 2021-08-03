@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { pki } from "node-forge";
 import Parallel from "paralleljs";
 import prettyMS from "pretty-ms";
+import { Global } from '../global';
 import { Logger } from '../logger';
 import { getTime } from '../util';
 
@@ -47,6 +48,7 @@ export class RSA {
                 let [decrypted] = result
                 const diff = prettyMS(getTime() - start)
 
+                Global.cache.set(`rsa-decrypted-${encrypted}`, decrypted)
                 currLog.success(`🔑 Decrypted successfully after ${diff}`)
                 resolve(decrypted)
             }, err => {

@@ -1,10 +1,13 @@
 import { Connection } from 'typeorm';
 import { Database } from "./database";
 import { Logger } from './logger';
-
+import NodeCache from "node-cache"
 
 export class Global {
     static _database: Database | undefined
+
+    //Cache passwords for max one minute
+    static cache = new NodeCache({stdTTL: 60})
 
     //* This promise to prevent from not initializing the database
     static _prom: Promise<Connection | undefined> | undefined

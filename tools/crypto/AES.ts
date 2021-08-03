@@ -2,9 +2,10 @@ import { nanoid } from 'nanoid';
 import Parallel from "paralleljs";
 import prettyMS from 'pretty-ms';
 import { Global } from '../global';
+import { Logger } from '../logger';
 import { getTime } from '../util';
 
-const log = Global.getLogger("Crypto", "AES");
+const log = Logger.getLogger("Crypto", "AES");
 export class AES {
     static keySize = 32
 
@@ -73,7 +74,7 @@ export class AES {
         });
     }
 
-    static async decrypt(options: DecryptOptions) {
+    static async decrypt(options: DecryptOptions): Promise<string | undefined> {
         return new Promise(resolve => {
             const currLog = log.scope(nanoid())
             const worker = new Parallel([
@@ -100,6 +101,7 @@ export class AES {
                 const end = new Date().getTime()
                 currLog.success(`🔑 Encryption took ${end - start}ms`)
 
+                Global.cache.set(`aes-decrypted-${options.encrypted}`, result[0])
                 resolve(result[0])
             }, err => {
                 const end = new Date().getTime()

@@ -4,6 +4,7 @@ export enum FormattedError {
     METHOD_NOT_ALLOWED,
     RATE_LIMITED,
     USER_EXISTS,
+    INVALID_TYPES
 }
 
 export enum GeneralError {
@@ -25,7 +26,12 @@ export enum GeneralError {
     USER_CREATION_ERROR,
     CANT_GENERATE_TFA_SECRET,
     CANT_ENCRYPT_TFA_SECRET,
-    ERROR_ADDING_ENCRYPTION_KEY
+    ERROR_ADDING_ENCRYPTION_KEY,
+    OTP_NO_USER,
+    TFA_ALREADY_VERIFIED,
+    INVALID_LOGIN,
+    CANT_DECRYPT_TFA_SECRET,
+    WRONG_TFA_CODE
 }
 
 type ErrorCodes = FormattedError | GeneralError

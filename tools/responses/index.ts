@@ -41,7 +41,13 @@ export function sendErrorResponse<T>(res: NextApiResponse<T | ErrorResponse>, in
             }
             break;
 
-
+        case FormattedError.INVALID_TYPES:
+            response = {
+                error: FormattedError.INVALID_TYPES,
+                status: HttpStatusCode.BAD_REQUEST,
+                message: `Invalid types for the following fields: ${options.invalidTypeFields}`
+            }
+            break;
         default:
             break;
     }
@@ -67,9 +73,14 @@ interface InvalidBodyLength {
     invalidFields: string
 }
 
+interface InvalidType {
+    error: FormattedError.INVALID_TYPES,
+    invalidTypeFields: string
+}
+
 interface JustError {
     error: GeneralError
 }
 
 type ErrorOptions = MethodNotAllowed | InvalidBodyLength |
-    FieldsNotAvailable | JustError
+    FieldsNotAvailable | JustError | InvalidType

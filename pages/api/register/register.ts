@@ -15,7 +15,7 @@ import { sendErrorResponse } from '../../../tools/responses'
 import { getIP } from '../../../tools/util'
 import { runChecks } from '../../../tools/validators'
 
-const log = Logger.getLogger("API", "Register",  "Register")
+const log = Logger.getLogger("API", "Register", "Register")
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<RegisterResponse | APIError>
@@ -50,6 +50,16 @@ export default async function handler(
         maxLength: 128
       }
     ],
+    typeCheck: [
+      {
+        name: "username",
+        type: "string"
+      },
+      {
+        name: "password",
+        type: "string"
+      }
+    ]
   }, req, res)
 
   if (!responseValid || !userIP)
@@ -59,7 +69,7 @@ export default async function handler(
   if (!token)
     return sendErrorResponse(res, GeneralError.TOKEN_NOT_FOUND)
 
-  const user = await User.getByUsername(username)
+  const user = await User.get(username)
   if (!user)
     return sendErrorResponse(res, GeneralError.USER_EXISTS)
 
@@ -81,8 +91,8 @@ export default async function handler(
     return sendErrorResponse(res, GeneralError.CANT_HASH_PASSWORD)
 
 
-  const { EncryptedKey, publicKey } = await generateRSA(res, decryptedPassword) ?? {}
-  if (!EncryptedKey || !publicKey)
+  const { privateKey, publicKey } = await generateRSA(res) ?? {}
+  if (!privateKey || !publicKey)
     return;
 
   const { TFASecret, EncryptedTFA, iv } = await generateTFA(res, decryptedPassword) ?? {}
@@ -92,13 +102,13 @@ export default async function handler(
 
 
   const creationResult = await User.add({
-    encryptedPrivateKey: EncryptedKey,
+    privateKey: privateKey,
     hashedPassword: hashedPassword,
     publicKey: publicKey,
-    TFASecret: TFASecret,
+    TFASecret: EncryptedTFA,
+    iv: iv,
     username: username,
     TFAVerified: false,
-    iv: iv,
   })
 
   switch (creationResult) {
@@ -115,7 +125,7 @@ export default async function handler(
         .status(HttpStatusCode.OK)
         .json({
           encryptedTFASecret: EncryptedTFA,
-          encryptedPrivateKey: EncryptedKey
+          publicKey: publicKey
         })
   }
 
@@ -142,28 +152,14 @@ export default async function handler(
     }
   }
 
-  async function generateRSA(res: NextApiResponse<RegisterResponse | APIError>, pass: string) {
+  async function generateRSA(res: NextApiResponse<RegisterResponse | APIError>) {
     const { publicKey, privateKey } = await RSA.generateKeyPair() ?? {}
     if (!publicKey || !privateKey)
       return sendErrorResponse(res, GeneralError.CANT_GENERATE_RSA_KEYPAIR)
 
-    const iv = await AES.generateIV()
-    if (!iv)
-      return sendErrorResponse(res, GeneralError.CANT_GENERATE_IV)
-
-    const EncryptedKey = await AES.encrypt({
-      iv: iv,
-      plain: privateKey,
-      password: pass
-    })
-
-    if (!EncryptedKey)
-      return sendErrorResponse(res, GeneralError.CANT_ENCRYPT_PRIVATE_KEY)
-
     return {
       privateKey: privateKey,
-      publicKey: publicKey,
-      EncryptedKey: EncryptedKey
+      publicKey: publicKey
     }
   }
 
@@ -182,5 +178,5 @@ export default async function handler(
 
 type RegisterResponse = {
   encryptedTFASecret: string,
-  encryptedPrivateKey: string
+  publicKey: string
 }

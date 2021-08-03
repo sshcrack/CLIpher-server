@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { Global } from "../global";
 import { APIError, AvailableMethods, CheckInterface, MaxLengthInterface } from "../interfaces/APIInterfaces";
 import ErrorCodes, { FormattedError, GeneralError } from "../interfaces/error-codes";
-import { CheckArguments, IFunctionArgs, IFunctions } from "./interface";
+import { CheckArguments, IFunctionArgs, IFunctions, TypeCheckInterface } from "./interface";
 import { sendErrorResponse } from "../responses";
 import { getIP } from "../util";
 
@@ -22,8 +22,9 @@ export function checkMaxLength<T>(toCheck: CheckInterface[], req: NextApiRequest
     toCheck.forEach(curr => {
         const { name, maxLength } = curr
         const currValue = body[name]
+        const length = currValue?.toString()
 
-        if (!currValue.length)
+        if (!length)
             return debug("📌 Couldn't check field", name, ": length property not found ")
 
         if (currValue.length <= maxLength)
@@ -128,14 +129,43 @@ export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiRes
 
     return currentConn !== undefined
 }
-export async function runChecks<T, X extends string>({ method, requiredFields, checks, ip }: CheckArguments<X>, req: NextApiRequest, res: NextApiResponse<T>) {
-    const noIPLength = 4
-    const withIPLength = 5 // Just noIPLength plus one, but cant do that bc typescript
+
+/**
+ * Checks if given types are the same as in the body
+ * @param _req NextJS request object
+ * @param res NextJS response object
+ * @returns If the check succeeded
+ */
+function checkTypes<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>, typeCheck: TypeCheckInterface[]) {
+    const body = req.body
+
+    const invalidFields: string[] = []
+    typeCheck.forEach(element => {
+        const { name, type } = element
+        const value = body[name]
+
+        if (type !== value)
+            invalidFields.push(name)
+    })
+
+    if (invalidFields.length !== 0)
+        sendErrorResponse(res, {
+            error: FormattedError.INVALID_TYPES,
+            invalidTypeFields: invalidFields.join(", ")
+        })
+
+    return invalidFields.length === 0
+}
+
+export async function runChecks<T, X extends string>({ method, requiredFields, checks, ip, typeCheck }: CheckArguments<X>, req: NextApiRequest, res: NextApiResponse<T>) {
+    const noIPLength = 5
+    const withIPLength = 6 // Just noIPLength plus one, but cant do that bc typescript
 
     const funcLength = ip ? withIPLength : noIPLength
     const functions: IFunctions<typeof withIPLength> = [
         checkMethod,
         checkBody,
+        checkTypes,
         checkDBConnection,
         checkMaxLength,
         checkIP
@@ -147,6 +177,9 @@ export async function runChecks<T, X extends string>({ method, requiredFields, c
         ],
         [
             requiredFields
+        ],
+        [
+            typeCheck
         ],
         [],
         [

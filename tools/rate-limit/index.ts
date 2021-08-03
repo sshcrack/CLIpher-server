@@ -23,7 +23,7 @@ export class RateLimit {
             retries: 1
         },
         {
-            type: ConsumeType.TFA,
+            type: ConsumeType.VerifyTFA,
             retries: 5
         }
     ].map(e => {

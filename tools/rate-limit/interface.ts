@@ -3,7 +3,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 export enum ConsumeType {
     EncryptionKey,
     Register,
-    TFA,
+    VerifyTFA,
 }
 
 export interface CostInterface<T> {

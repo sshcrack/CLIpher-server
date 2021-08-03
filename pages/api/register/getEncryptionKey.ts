@@ -44,6 +44,12 @@ export default async function handler(
         maxLength: 32
       }
     ],
+    typeCheck: [
+      {
+        name: "username",
+        type: "string"
+      }
+    ]
   }, req, res)
 
   if (!validRequest || !userIP)
