@@ -1,12 +1,15 @@
 //* Always import reflect-metadata when working with db stuff
 import "reflect-metadata";
 
+import { nanoid } from 'nanoid';
+import prettyMS from 'pretty-ms';
 import { Repository } from "typeorm";
+import { Logger } from '../../logger';
+import { getKeyExpiration, getTime } from "../../util";
 import { EncryptionKeySQL } from "../entities/EncryptionToken";
-import debugConstr from "debug"
-import { getKeyExpiration } from "../../util";
 
-const debug = debugConstr("Repository:EncryptionKey")
+
+const log = Logger.getLogger("Repository", "EncryptionKey")
 const tokenExpiration = getKeyExpiration()
 
 
@@ -21,15 +24,17 @@ export class EncryptionKeyConstruct {
     }
 
     public getKey(username: string) {
-        debug(`Finding token of user ${username}`)
+        log.info(`Finding token of user ${username}`)
         return this.repo.findOne({ username })
     }
 
     public addKey(toSave: EncryptionKeySQL) {
         return new Promise(resolve => {
             const { username } = toSave
+            const currLog = log.scope(nanoid())
+            const start = getTime()
 
-            debug("🕑 Adding token of user", username)
+            currLog.await("🕑 Adding token of user", username, "...")
             this.repo.save(toSave).then(() => {
                 const currSchedule = this.TimeoutIDs[username]
                 if (currSchedule)
@@ -39,26 +44,38 @@ export class EncryptionKeyConstruct {
                     const removeRes = await this.removeKey(username)
 
                     if (!removeRes)
-                        debug("💥 Failed to remove key")
-
+                        currLog.error("💥 Failed to remove key")
                 }, tokenExpiration)
 
-                debug("🔑 Added token of user", username)
+                const diff = prettyMS(getTime() - start)
+                currLog.success("🔑 Added token of user", username, "after", diff)
                 resolve(EncryptionResult.SUCCESS)
             }).catch(e => {
-                debug("💥 Couldn't add key", e.message)
+                const diff = prettyMS(getTime() - start)
+                currLog.error("💥 Couldn't add key", e.message, "after", diff)
+
                 resolve(EncryptionResult.ERROR)
             })
         });
     }
 
     public async removeKey(username: string) {
-        debug(`🗑️ Deleting key of user ${username}`)
+        const currLog = log.scope(nanoid())
+        const start = getTime()
+
+        currLog.await(`🕒 Deleting key of user ${username}`)
         const deletionRes = await this.repo.delete({
             username: username
         })
 
-        return deletionRes.affected !== 0
+        const successful = deletionRes.affected !== 0
+        const diff = prettyMS(getTime() - start)
+
+        successful ?
+            currLog.success("🗑️ Removed key after", diff) :
+            currLog.error("💥 Failed to delete key after", diff)
+
+        return successful
     }
 
     public async exists(username: string) {

@@ -1,24 +1,27 @@
 //* Always import reflect-metadata when working with db stuff
 import "reflect-metadata";
 
-import debugConstr from "debug";
 import { NextApiRequest, NextApiResponse } from 'next';
 import { RSA } from "../../../tools/crypto/RSA";
+import { EncryptionResult } from '../../../tools/database/constructs/encryptionKeyConstruct';
 import { Global } from '../../../tools/global';
 import { APIError, EncryptionKeyResponse } from '../../../tools/interfaces/APIInterfaces';
 import { GeneralError } from "../../../tools/interfaces/error-codes";
+import { Logger } from '../../../tools/logger';
 import { RateLimit } from "../../../tools/rate-limit";
 import { ConsumeType } from "../../../tools/rate-limit/interface";
 import { sendErrorResponse } from "../../../tools/responses";
 import { getIP, getKeyExpirationDate } from "../../../tools/util";
 import { runChecks } from "../../../tools/validators";
-import { Timestamp } from 'typeorm';
-import { EncryptionResult } from '../../../tools/database/constructs/encryptionKeyConstruct';
 
 
 
 
-const debug = debugConstr("API:EncryptionKey")
+
+
+
+const log = Logger.getLogger("API", "Register", "EncryptionKey")
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<EncryptionKeyResponse | APIError>
@@ -46,29 +49,27 @@ export default async function handler(
   if (!validRequest || !userIP)
     return
 
-  debug(`🕑 Checking if ${username} is available`)
   const usernameExists = await User.exists(username)
 
-  if (usernameExists) {
-    debug("👥 Username already exists.")
-
-    sendErrorResponse(res, GeneralError.USER_EXISTS)
-    return
-  }
+  if (usernameExists)
+    return sendErrorResponse(res, GeneralError.USER_EXISTS)
 
 
-  debug("🕑 Checking for duplicates...")
   const exists = await EncryptionKey.getKey(username)
 
   if (exists) {
-    if (exists.ip !== userIP)
-      return sendErrorResponse(res, GeneralError.REQUESTED_FROM_OTHER_IP)
+    if (exists.ip !== userIP) {
+      log.info("Requested from other IP")
 
-    debug("👥 Duplicate found. Sending...")
+      sendErrorResponse(res, GeneralError.REQUESTED_FROM_OTHER_IP)
+      return
+    }
+
     res.send({
       publicKey: exists.key,
       expiresAt: exists.expiresAt.getTime()
     })
+    log.info("Sent cache results")
 
     return
   }
@@ -76,11 +77,9 @@ export default async function handler(
   const { publicKey, privateKey } = await RSA.generateKeyPair().catch(() => { }) ?? {}
   const keyExpiration = getKeyExpirationDate()
 
-  if (!publicKey || !privateKey) {
-    debug("💥 Error generating key pair")
-    sendErrorResponse(res, GeneralError.ERROR_GENERATING_KEY_PAIR)
-    return
-  }
+  if (!publicKey || !privateKey)
+    return sendErrorResponse(res, GeneralError.ERROR_GENERATING_KEY_PAIR)
+
 
   const result = await EncryptionKey.addKey({
     username: username,

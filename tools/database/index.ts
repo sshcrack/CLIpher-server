@@ -1,18 +1,18 @@
 //! Reflect Metadata must be kept at top
 import "reflect-metadata";
 
-import debugConstr from "debug";
+import prettyMS from 'pretty-ms';
 import { Connection, createConnection, getConnection, getRepository } from "typeorm";
+import { Logger } from '../logger';
+import { getTime } from '../util';
 import { EncryptionKeyConstruct } from "./constructs/encryptionKeyConstruct";
+import { UserConstruct } from "./constructs/userConstruct";
 import { EncryptionKeySQL } from "./entities/EncryptionToken";
 import { UserSQL } from "./entities/User";
-import { UserConstruct } from "./constructs/userConstruct"
 
 
 
-
-
-const debug = debugConstr("Database")
+const log = Logger.getLogger("Database")
 //Getting environment variables
 const {
     DATABASE_TYPE,
@@ -38,7 +38,7 @@ export class Database {
      */
     async getConnection() {
         if (this.connectionPromise) {
-            debug("⏰ There's already a connection in process. Waiting for it to finish")
+            log.await("⏰ There's already a connection in process. Waiting for it to finish")
             await this.connectionPromise
         }
 
@@ -65,11 +65,13 @@ export class Database {
         }
 
         if (oldConnection) {
-            debug("👋 Closing connection")
-            await oldConnection.close().catch(e => debug("💥 Couldn't close connection", e.message))
+            log.star("👋 Closing connection")
+            await oldConnection.close().catch(e => log.error("💥 Couldn't close connection", e.message))
         }
 
-        debug("⏱ Establishing connection...")
+        const start = getTime()
+
+        log.await("⏱ Establishing connection...")
         this.connection = await createConnection({
             type: DATABASE_TYPE ?? "postgres" as any,
             host: DATABASE_HOST ?? "localhost",
@@ -81,17 +83,22 @@ export class Database {
             logging: ["error", "warn", "info"],
             logger: "debug",
             entities: [UserSQL, EncryptionKeySQL]
-        }).catch(e => debug("💥 Database connection failed", e.message))
+        }).catch(e => log.fatal("💥 Database connection failed", e.message))
 
         if (!this.connection)
             return undefined
 
-        debug("💾 Established connection!")
-        debug("⏱ Initializing repositories...")
+        const diff = prettyMS(getTime() - start)
+        log.success(`💾 Established connection after ${diff}!`)
+
+        log.await("⏱ Initializing repositories...")
+        const startRepo = getTime()
+
         this.EncryptionKey = new EncryptionKeyConstruct(getRepository(EncryptionKeySQL))
         this.User = new UserConstruct(getRepository(UserSQL))
 
-        debug("📕 Repositories initialized.")
+        const diffRepo = prettyMS(getTime() - startRepo)
+        log.success(`📕 Repositories initialized after ${diffRepo}`)
         return this.connection
     }
 }

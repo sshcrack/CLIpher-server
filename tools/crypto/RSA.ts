@@ -1,9 +1,11 @@
-import debugConstr from "debug";
+import { nanoid } from "nanoid";
 import { pki } from "node-forge";
 import Parallel from "paralleljs";
-import { getTime } from "../util";
+import prettyMS from "pretty-ms";
+import { Logger } from '../logger';
+import { getTime } from '../util';
 
-const debug = debugConstr("Crypto:RSA")
+const log = Logger.getLogger("Crypto", "RSA")
 const rsa = pki.rsa
 
 type PEMOutput = {
@@ -21,10 +23,11 @@ export class RSA {
     static decrypt(encrypted: string, privateKeyPEM: string): Promise<string | undefined> {
         return new Promise(resolve => {
             const worker = new Parallel([encrypted, privateKeyPEM]);
+
+            const currLog = log.scope(nanoid())
             const start = getTime()
 
-
-            debug("🕐 Decrypting message...")
+            currLog.await(`🕒 Decrypting...`)
             worker.spawn(item => {
                 const { pki } = eval(`require("node-fetch")`)
 
@@ -42,17 +45,14 @@ export class RSA {
                 return [decrypted]
             }).then(result => {
                 let [decrypted] = result
+                const diff = prettyMS(getTime() - start)
 
-                const end = getTime()
-                const ms = end - start
-
-                debug("🔑 RSA Decryption successful after", ms, "ms")
+                currLog.success(`🔑 Decrypted successfully after ${diff}`)
                 resolve(decrypted)
             }, err => {
-                const end = getTime()
-                const ms = end - start
+                const diff = prettyMS(getTime() - start)
 
-                debug("💥 RSA Decryption failed after", ms, "ms. Error: ", err.message)
+                currLog.error(`💥 Decryption failed after ${diff} Error: ${err.message}`)
                 resolve(undefined)
             })
         })
@@ -61,16 +61,17 @@ export class RSA {
     static encrypt(message: string, publicKeyPEM: string) {
         return new Promise(resolve => {
             const worker = new Parallel([message, publicKeyPEM])
+
+            const currLog = log.scope(nanoid())
             const start = getTime()
 
-            debug("🕐 Encrypting message...")
+            currLog.await(`🕒 Encrypting Key...`)
             worker.spawn(item => {
                 const { pki } = eval(`require("node-fetch")`)
                 const [message, publicKeyPEM] = item
 
                 const publicKey = pki.publicKeyFromPem(publicKeyPEM)
                 let encrypted: string
-
                 try {
                     encrypted = publicKey.encrypt(message)
                 } catch (err) {
@@ -80,17 +81,14 @@ export class RSA {
                 return [encrypted]
             }).then(result => {
                 const [encrypted] = result
+                const diff = prettyMS(getTime() - start)
 
-                const end = getTime()
-                const ms = end - start
-
-                debug("🔑 RSA Encryption successful after", ms, "ms")
+                currLog.success(`🔑 Encryption successfully after ${diff}`)
                 resolve(encrypted)
             }, err => {
-                const end = getTime()
-                const ms = end - start
+                const diff = prettyMS(getTime() - start)
 
-                debug("💥 RSA Encryption failed after", ms, "ms. Error: ", err.message)
+                currLog.error(`💥 Encryption failed after ${diff} Error: ${err.message}`)
                 resolve(undefined)
             })
         })
@@ -101,29 +99,30 @@ export class RSA {
      * @returns A generated RSA key pair
      */
     static generateKeyPair(): Promise<PEMOutput | undefined> {
-        return new Promise((resolve, reject) => {
-            debug("🕐 Generating keypair...")
+        return new Promise(resolve => {
+            const currLog = log.scope(nanoid())
             const start = getTime()
+
+            currLog.await(`🕒 Generating Key pair...`)
             rsa.generateKeyPair({
                 bits: 2048,
                 workers: 4,
             }, (err, keyPair) => {
-                const end = getTime()
-                const ms = end - start
-
+                const { publicKey, privateKey } = keyPair ?? {}
+                const diff = prettyMS(getTime() - start)
                 if (err) {
-                    debug("💥 RSA Keypair generation failed after", ms, "ms")
+                    currLog.error(`💥 Key pair generation failed after ${diff} Error: ${err.message}`)
+
                     return resolve(undefined)
                 }
 
-                debug("🔑 RSA Keypair generated after", ms, "ms")
 
-                const { publicKey, privateKey } = keyPair
-
+                currLog.success(`🔑 Key pair was generated successfully after ${diff}`)
                 const pem = {
                     publicKey: pki.publicKeyToPem(publicKey),
                     privateKey: pki.privateKeyToPem(privateKey)
                 }
+
                 resolve(pem)
             })
         });

@@ -1,8 +1,8 @@
-import debugConstr from "debug";
 import { Connection } from 'typeorm';
 import { Database } from "./database";
+import { Logger } from './logger';
 
-const debug = debugConstr("Global")
+
 export class Global {
     static _database: Database | undefined
 
@@ -28,5 +28,7 @@ export class Global {
     }
 }
 
-debug("Initializing database...")
+const log = Logger.getLogger("Global")
+
+log.await("Initializing database...")
 Global.getDatabase()

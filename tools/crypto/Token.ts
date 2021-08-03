@@ -1,19 +1,22 @@
-import debugConstr from "debug"
+import { nanoid } from 'nanoid'
+import prettyMilliseconds from 'pretty-ms'
 import CryptoRandomString from "../commonjs-libs/crypto-random-string"
+import { Logger } from '../logger'
 import { getTime } from "../util"
 
-const debug = debugConstr("TokenGenerator")
+const log = Logger.getLogger("Crypto", "Token")
 export function generateToken() {
-    debug(`🕑 Requesting to generate token...`)
-    const measureStart = getTime()
+    const currLog = log.scope(nanoid())
+    const start = getTime()
+
+    currLog.await(`🕑 Requesting to generate token...`)
     const token = CryptoRandomString.generate({
         type: "ascii-printable",
         length: 64
     })
 
-    const now = getTime()
-    const difference = now - measureStart
-    debug(`🔑 Token generation took ${difference}ms`)
+    const diff = prettyMilliseconds(getTime() - start)
+    currLog.success(`🔑 Token generation took ${diff}`)
 
     return token
 }

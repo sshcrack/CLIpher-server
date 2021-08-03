@@ -1,4 +1,3 @@
-import debugConstr from "debug"
 import { NextApiRequest, NextApiResponse } from 'next'
 import { authenticator } from 'otplib'
 import { AES } from '../../../tools/crypto/AES'
@@ -9,13 +8,14 @@ import { Global } from '../../../tools/global'
 import { APIError } from '../../../tools/interfaces/APIInterfaces'
 import { GeneralError } from '../../../tools/interfaces/error-codes'
 import HttpStatusCode from '../../../tools/interfaces/status-codes'
+import { Logger } from '../../../tools/logger'
 import { RateLimit } from '../../../tools/rate-limit'
 import { ConsumeType } from '../../../tools/rate-limit/interface'
 import { sendErrorResponse } from '../../../tools/responses'
 import { getIP } from '../../../tools/util'
 import { runChecks } from '../../../tools/validators'
 
-const debug = debugConstr('API:Register')
+const log = Logger.getLogger("API", "Register",  "Register")
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<RegisterResponse | APIError>
@@ -35,8 +35,7 @@ export default async function handler(
   //!
   //!
 
-
-  debug("🕒 Validating...")
+  log.await("Running checks...")
   const responseValid = runChecks({
     method: "POST",
     requiredFields: ["username, password"],
@@ -54,7 +53,7 @@ export default async function handler(
   }, req, res)
 
   if (!responseValid || !userIP)
-    return;
+    return log.debug("Checks failed.")
 
   const token = await EncryptionKey.getKey(username)
   if (!token)
@@ -71,7 +70,7 @@ export default async function handler(
   //!
   //!
 
-  debug("🔑 Decrypting password...")
+  log.info("🔑 Decrypting password...")
   const decryptedPassword = await decryptPassword(password, token.privateKey)
   if (!decryptedPassword)
     return

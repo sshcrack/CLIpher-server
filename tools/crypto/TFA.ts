@@ -1,13 +1,21 @@
+import { nanoid } from 'nanoid';
 import { authenticator } from 'otplib';
-import debugConstr from 'debug';
+import prettyMS from 'pretty-ms';
+import { Logger } from '../logger';
+import { getTime } from '../util';
 
-const debug = debugConstr("Crypto:TFA")
+const log = Logger.getLogger("Crypto", "TFA")
 export class TFA {
     static generateSecret() {
-        debug("🕒 Generating secret...")
-        const secret = authenticator.generateSecret()
+        const currLog = log.scope(nanoid())
+        const start = getTime()
 
-        debug("🔑 Secret generated")
+        currLog.await("🕒 Generating secret...")
+
+        const secret = authenticator.generateSecret()
+        const diff = prettyMS(getTime() - start)
+
+        currLog.success(`🔑 Secret generated after ${diff}`)
         return secret
     }
 }

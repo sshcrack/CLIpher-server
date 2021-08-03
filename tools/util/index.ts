@@ -1,11 +1,11 @@
-import debugConstr from "debug";
 import nerdamer from "nerdamer";
 import { NextApiRequest, NextApiResponse } from "next";
 import { RateLimiterRes } from "rate-limiter-flexible";
 import { JSONObject } from "../interfaces/APIInterfaces";
+import { Logger } from '../logger';
 
 
-const debug = debugConstr("Util")
+const log = Logger.getLogger("Util")
 
 /**
  * Get encryption key expiration time
@@ -14,7 +14,7 @@ const debug = debugConstr("Util")
 export function getKeyExpiration() {
     const { GENERATE_KEY_EXPIRATION } = process.env
     if (!GENERATE_KEY_EXPIRATION) {
-        debug("🚫 No token expiration given. Exiting...")
+        log.fatal("🚫 No token expiration given. Exiting...")
         process.exit(-2)
     }
 

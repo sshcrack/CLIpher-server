@@ -1,14 +1,14 @@
-import debugConstr from "debug"
 import { NextApiRequest, NextApiResponse } from "next"
 import { RateLimiterMemory } from "rate-limiter-flexible"
 import { APIError } from "../interfaces/APIInterfaces"
 import { FormattedError, GeneralError } from "../interfaces/error-codes"
 import HttpStatusCode from "../interfaces/status-codes"
+import { Logger } from '../logger'
 import { sendErrorResponse } from "../responses"
 import { getIP, getRateLimitHeaders, setHeaders } from "../util"
 import { ConsumeType, CostInterface } from "./interface"
 
-const debug = debugConstr("RateLimiter")
+const log = Logger.getLogger("RateLimiter")
 export class RateLimit {
     static instance: RateLimit = new RateLimit()
 
@@ -52,7 +52,8 @@ export class RateLimit {
 
         const limiterInformation = limiters.find(e => e.type === type)
         if (!limiterInformation) {
-            debug("🌵 Type", type, "not found")
+            log.fatal("🌵 Type", type, "not found")
+
             sendErrorResponse(res, GeneralError.TYPE_NOT_FOUND)
             return true
         }
@@ -73,6 +74,7 @@ export class RateLimit {
             .catch(result => {
                 const headers = getRateLimitHeaders(result, retries)
 
+                log.info("A user has been rate-limited.")
                 setHeaders(headers, res)
                 res
                     .status(HttpStatusCode.TOO_MANY_REQUESTS)
