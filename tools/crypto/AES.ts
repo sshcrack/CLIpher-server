@@ -76,6 +76,10 @@ export class AES {
 
     static async decrypt(options: DecryptOptions): Promise<string | undefined> {
         return new Promise(resolve => {
+            const cached = Global.cache.get<string | undefined>(`aes-decrypted-${options.encrypted}-${options.iv}`)
+            if (cached)
+                return resolve(cached)
+
             const currLog = log.scope(nanoid())
             const worker = new Parallel([
                 options.encrypted,
@@ -101,7 +105,7 @@ export class AES {
                 const end = new Date().getTime()
                 currLog.success(`🔑 Encryption took ${end - start}ms`)
 
-                Global.cache.set(`aes-decrypted-${options.encrypted}`, result[0])
+                Global.cache.set(`aes-decrypted-${options.encrypted}-${options.iv}`, result[0])
                 resolve(result[0])
             }, err => {
                 const end = new Date().getTime()

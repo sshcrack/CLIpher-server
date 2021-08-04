@@ -108,7 +108,7 @@ export const ErrorResponseList: APIErrorExtended[] = [
         message: "You have already verified your two factor authentication"
     },
     {
-        error: GeneralError.INVALID_LOGIN,
+        error: GeneralError.INVALID_CREDENTIALS,
         status: HttpStatusCode.UNAUTHORIZED,
         message: "Username/password is wrong."
     },
@@ -121,6 +121,26 @@ export const ErrorResponseList: APIErrorExtended[] = [
         error: GeneralError.WRONG_TFA_CODE,
         status: HttpStatusCode.UNAUTHORIZED,
         message: "You have entered the wrong 2FA Code"
+    },
+    {
+        error: GeneralError.CANT_ADD_LOGIN_TOKEN,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not add login token to the db."
+    },
+    {
+        error: GeneralError.INVALID_LOGIN_TOKEN,
+        status: HttpStatusCode.UNAUTHORIZED,
+        message: "The given login token is invalid."
+    },
+    {
+        error: GeneralError.LOGIN_TOKEN_USER_NOT_FOUND,
+        status: HttpStatusCode.CONFLICT,
+        message: "The user the login token refers to can not be found."
+    },
+    {
+        error: GeneralError.ENCRYPTION_CONFLICT_CHECK_TFA,
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        message: "Could not decrypt your password using the login token"
     }
 ]
 

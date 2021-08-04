@@ -15,7 +15,6 @@ export type TypeCheckInterface = {
     type: TypeOfResults
 }
 
-export type TypeOfResults = "undefined" | "object" | "boolean" | "number" |
-    "bigint" | "string" | "symbol" | "function"
+export type TypeOfResults = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
 export type IFunctionArgs<T extends number, X extends string> = FixedLengthArray<CheckArgumentType<X>[], T>
 export type IFunctions<T extends number> = FixedLengthArray<Function, T>

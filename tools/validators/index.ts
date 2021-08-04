@@ -136,7 +136,7 @@ export async function checkDBConnection<T>(_req: NextApiRequest, res: NextApiRes
  * @param res NextJS response object
  * @returns If the check succeeded
  */
-function checkTypes<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>, typeCheck: TypeCheckInterface[]) {
+function checkTypes<T>(typeCheck: TypeCheckInterface[], req: NextApiRequest, res: NextApiResponse<T | APIError>) {
     const body = req.body
 
     const invalidFields: string[] = []
@@ -144,7 +144,7 @@ function checkTypes<T>(req: NextApiRequest, res: NextApiResponse<T | APIError>, 
         const { name, type } = element
         const value = body[name]
 
-        if (type !== value)
+        if (type !== typeof value)
             invalidFields.push(name)
     })
 

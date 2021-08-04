@@ -7,7 +7,7 @@ export class Global {
     static _database: Database | undefined
 
     //Cache passwords for max one minute
-    static cache = new NodeCache({stdTTL: 60})
+    static cache = new NodeCache({ stdTTL: 60 })
 
     //* This promise to prevent from not initializing the database
     static _prom: Promise<Connection | undefined> | undefined
@@ -21,10 +21,15 @@ export class Global {
 
         const database = new Database()
         this._database = database
+
         const prom = database.getConnection()
         this._prom = prom
 
-        await prom
+        const promRes = await prom
+        if (promRes === undefined) {
+            this._database = undefined
+            return undefined
+        }
         this._prom = undefined
 
         return database

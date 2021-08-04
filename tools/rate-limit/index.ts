@@ -24,7 +24,15 @@ export class RateLimit {
         },
         {
             type: ConsumeType.VerifyTFA,
-            retries: 5
+            retries: 3
+        },
+        {
+            type: ConsumeType.Login,
+            retries: 6
+        },
+        {
+            type: ConsumeType.CheckTFA,
+            retries: 3
         }
     ].map(e => {
         const obj: CostInterface<ConsumeType> = {

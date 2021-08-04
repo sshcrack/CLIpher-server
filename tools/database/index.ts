@@ -6,9 +6,14 @@ import { Connection, createConnection, getConnection, getRepository } from "type
 import { Logger } from '../logger';
 import { getTime } from '../util';
 import { EncryptionKeyConstruct } from "./constructs/encryptionKeyConstruct";
+import { AccessTokenConstruct } from "./constructs/accessTokenConstruct";
 import { UserConstruct } from "./constructs/userConstruct";
+import { LoginTokenConstruct } from "./constructs/loginTokenConstruct";
 import { EncryptionKeySQL } from "./entities/EncryptionToken";
 import { UserSQL } from "./entities/User";
+import { LoginTokenSQL } from "./entities/LoginToken";
+import { AccessTokenSQL } from './entities/AccessToken';
+import { resolveHref } from 'next/dist/next-server/lib/router/router';
 
 
 
@@ -29,6 +34,8 @@ export class Database {
     private connection: Connection | void
 
     public EncryptionKey: EncryptionKeyConstruct;
+    public LoginToken: LoginTokenConstruct;
+    public AccessToken: AccessTokenConstruct;
     public User: UserConstruct;
 
     /**
@@ -50,7 +57,7 @@ export class Database {
     }
 
     /**
-     * 
+     *
      * @returns A promise of the conn
      */
     private async getConnectionPromise() {
@@ -82,7 +89,7 @@ export class Database {
             synchronize: true,
             logging: ["error", "warn", "info"],
             logger: "debug",
-            entities: [UserSQL, EncryptionKeySQL]
+            entities: [UserSQL, EncryptionKeySQL, LoginTokenSQL, AccessTokenSQL]
         }).catch(e => log.fatal("💥 Database connection failed", e.message))
 
         if (!this.connection)
@@ -94,8 +101,18 @@ export class Database {
         log.await("⏱ Initializing repositories...")
         const startRepo = getTime()
 
-        this.EncryptionKey = new EncryptionKeyConstruct(getRepository(EncryptionKeySQL))
-        this.User = new UserConstruct(getRepository(UserSQL))
+        try {
+            this.EncryptionKey = new EncryptionKeyConstruct(getRepository(EncryptionKeySQL))
+            this.User = new UserConstruct(getRepository(UserSQL))
+            this.LoginToken = new LoginTokenConstruct(getRepository(LoginTokenSQL))
+            this.AccessToken = new AccessTokenConstruct(getRepository(AccessTokenSQL))
+        } catch (e) {
+            const diffRepo = prettyMS(getTime() - startRepo)
+            log.fatal("💥 Couldn't initialize repositories after", diffRepo, "Error: ", e.message)
+
+            return undefined;
+        }
+
 
         const diffRepo = prettyMS(getTime() - startRepo)
         log.success(`📕 Repositories initialized after ${diffRepo}`)

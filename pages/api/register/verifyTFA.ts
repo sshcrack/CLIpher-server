@@ -4,7 +4,7 @@ import { BCrypt } from '../../../tools/crypto/BCrypt';
 import { RSA } from '../../../tools/crypto/RSA';
 import { TFA } from '../../../tools/crypto/TFA';
 import { Global } from '../../../tools/global';
-import { APIError } from '../../../tools/interfaces/APIInterfaces';
+import { APIError, FieldLength } from '../../../tools/interfaces/APIInterfaces';
 import { GeneralError } from '../../../tools/interfaces/error-codes';
 import { Logger } from '../../../tools/logger';
 import { RateLimit } from '../../../tools/rate-limit';
@@ -21,6 +21,9 @@ export default async function handler(
     const { User } = await Global.getDatabase() ?? {}
     const { cache } = Global
 
+    if (!User)
+        return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
+
     const isRateLimited = await RateLimit.consume(ConsumeType.VerifyTFA, req, res)
     if (isRateLimited)
         return
@@ -31,15 +34,15 @@ export default async function handler(
         checks: [
             {
                 name: "userrname",
-                maxLength: 32,
+                maxLength: FieldLength.USERNAME,
             },
             {
                 name: "password",
-                maxLength: 128
+                maxLength: FieldLength.PASSWORD
             },
             {
                 name: "code",
-                maxLength: 6
+                maxLength: FieldLength.OTP
             }
         ],
         typeCheck: [
@@ -54,21 +57,21 @@ export default async function handler(
 
     const user = await User.get(username)
     if (!user)
-        return sendErrorResponse(res, GeneralError.INVALID_LOGIN)
+        return sendErrorResponse(res, GeneralError.INVALID_CREDENTIALS)
 
     if (user.TFAVerified)
         return sendErrorResponse(res, GeneralError.TFA_ALREADY_VERIFIED)
 
     const hashedPassword = user.hashedPassword
 
-    const decryptedPassword = cache.get<CacheResult>(`rsa-decrypted-${encryptedPassword}`) ?? await RSA.decrypt(encryptedPassword, user.privateKey)
+    const decryptedPassword = await RSA.decrypt(encryptedPassword, user.privateKey)
     if (!decryptedPassword)
         return sendErrorResponse(res, GeneralError.CANT_DECRYPT_PASSWORD)
 
 
     const passwordMatches = BCrypt.verify(hashedPassword, decryptedPassword)
     if (!passwordMatches)
-        return sendErrorResponse(res, GeneralError.INVALID_LOGIN)
+        return sendErrorResponse(res, GeneralError.INVALID_CREDENTIALS)
 
     const tfaSecret =
         cache.get<CacheResult>(`aes-decrypted-${user.TFASecret}`)
@@ -79,11 +82,11 @@ export default async function handler(
             password: decryptedPassword
         })
 
-    if(!tfaSecret)
+    if (!tfaSecret)
         return sendErrorResponse(res, GeneralError.CANT_DECRYPT_TFA_SECRET)
     const currCode = TFA.getOTP(tfaSecret)
 
-    if(currCode !== code)
+    if (currCode !== code)
         return sendErrorResponse(res, GeneralError.WRONG_TFA_CODE)
 
     await User.update(user.username, {

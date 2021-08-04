@@ -47,3 +47,9 @@ export type MaxLengthInterface = Merge<ValueInterface<string>, { maxLength: numb
 export type JSONObject<K extends string | number, T> = {
     [key in K]: T
 }
+
+export enum FieldLength {
+    USERNAME = 32,
+    PASSWORD = 128,
+    OTP = 6
+}

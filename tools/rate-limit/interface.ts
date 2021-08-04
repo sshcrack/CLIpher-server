@@ -4,6 +4,8 @@ export enum ConsumeType {
     EncryptionKey,
     Register,
     VerifyTFA,
+    Login,
+    CheckTFA
 }
 
 export interface CostInterface<T> {

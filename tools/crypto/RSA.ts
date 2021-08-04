@@ -23,6 +23,10 @@ export class RSA {
      */
     static decrypt(encrypted: string, privateKeyPEM: string): Promise<string | undefined> {
         return new Promise(resolve => {
+            const cached = Global.cache.get<string | undefined>(`rsa-decrypted-${encrypted}`)
+            if (cached)
+                return resolve(cached)
+
             const worker = new Parallel([encrypted, privateKeyPEM]);
 
             const currLog = log.scope(nanoid())

@@ -3,9 +3,8 @@ import "reflect-metadata";
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { RSA } from "../../../tools/crypto/RSA";
-import { EncryptionResult } from '../../../tools/database/constructs/encryptionKeyConstruct';
 import { Global } from '../../../tools/global';
-import { APIError, EncryptionKeyResponse } from '../../../tools/interfaces/APIInterfaces';
+import { APIError, EncryptionKeyResponse, FieldLength } from '../../../tools/interfaces/APIInterfaces';
 import { GeneralError } from "../../../tools/interfaces/error-codes";
 import { Logger } from '../../../tools/logger';
 import { RateLimit } from "../../../tools/rate-limit";
@@ -13,8 +12,6 @@ import { ConsumeType } from "../../../tools/rate-limit/interface";
 import { sendErrorResponse } from "../../../tools/responses";
 import { getIP, getKeyExpirationDate } from "../../../tools/util";
 import { runChecks } from "../../../tools/validators";
-
-
 
 
 
@@ -29,6 +26,8 @@ export default async function handler(
   const userIP = getIP(req)
   const { username } = req.body ?? {}
   const { EncryptionKey, User } = await Global.getDatabase() ?? {}
+  if (!EncryptionKey || !User)
+    return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
 
   const isRateLimited = await RateLimit.consume(ConsumeType.EncryptionKey, req, res)
   if (isRateLimited)
@@ -41,7 +40,7 @@ export default async function handler(
     checks: [
       {
         name: "username",
-        maxLength: 32
+        maxLength: FieldLength.USERNAME
       }
     ],
     typeCheck: [
@@ -87,6 +86,7 @@ export default async function handler(
     return sendErrorResponse(res, GeneralError.ERROR_GENERATING_KEY_PAIR)
 
 
+  console.log("Expiration in", keyExpiration, "date is", new Date(keyExpiration))
   const result = await EncryptionKey.addKey({
     username: username,
     key: publicKey,
@@ -95,7 +95,7 @@ export default async function handler(
     ip: userIP
   })
 
-  if (result !== EncryptionResult.SUCCESS)
+  if (!result)
     return sendErrorResponse(res, GeneralError.ERROR_ADDING_ENCRYPTION_KEY)
 
   res.send({

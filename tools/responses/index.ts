@@ -13,7 +13,7 @@ export function sendErrorResponse<T>(res: NextApiResponse<T | ErrorResponse>, in
     const options = typeof inputType === "object" ? inputType : { error: inputType } as ErrorOptions
     const generalErrors = ErrorResponseList
 
-    let response = generalErrors[options.error]
+    let response = generalErrors.find(e => e.error === options.error)
 
     // TODO I don't like how this is done at  all, but I don't know a better way :(
     switch (options.error) {
@@ -48,10 +48,17 @@ export function sendErrorResponse<T>(res: NextApiResponse<T | ErrorResponse>, in
                 message: `Invalid types for the following fields: ${options.invalidTypeFields}`
             }
             break;
+
         default:
             break;
     }
 
+    if (!response)
+        return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR)
+            .json({
+                error: GeneralError.UNKNOWN_ERROR,
+                message: `Couldn't find an error response for code ${options.error}`
+            })
     res.status(response.status).json({
         error: response.error,
         message: response.message

@@ -3,7 +3,7 @@ import "reflect-metadata";
 
 import { nanoid } from 'nanoid';
 import prettyMS from 'pretty-ms';
-import { Repository } from "typeorm";
+import { FindOperator, LessThanOrEqual, Repository } from "typeorm";
 import { Logger } from '../../logger';
 import { getKeyExpiration, getTime } from "../../util";
 import { EncryptionKeySQL } from "../entities/EncryptionToken";
@@ -16,9 +16,6 @@ const tokenExpiration = getKeyExpiration()
 export class EncryptionKeyConstruct {
     private repo: Repository<EncryptionKeySQL>
 
-    //Ids of scheduled key removal functions
-    private TimeoutIDs: { [key: string]: NodeJS.Timeout } = {}
-
     constructor(repo: Repository<EncryptionKeySQL>) {
         this.repo = repo
     }
@@ -28,7 +25,7 @@ export class EncryptionKeyConstruct {
         return this.repo.findOne({ username })
     }
 
-    public addKey(toSave: EncryptionKeySQL) {
+    public addKey(toSave: EncryptionKeySQL): Promise<boolean> {
         return new Promise(resolve => {
             const { username } = toSave
             const currLog = log.scope(nanoid())
@@ -36,25 +33,14 @@ export class EncryptionKeyConstruct {
 
             currLog.await("🕑 Adding token of user", username, "...")
             this.repo.save(toSave).then(() => {
-                const currSchedule = this.TimeoutIDs[username]
-                if (currSchedule)
-                    clearTimeout(currSchedule)
-
-                this.TimeoutIDs[username] = setTimeout(async () => {
-                    const removeRes = await this.removeKey(username)
-
-                    if (!removeRes)
-                        currLog.error("💥 Failed to remove key")
-                }, tokenExpiration)
-
                 const diff = prettyMS(getTime() - start)
                 currLog.success("🔑 Added token of user", username, "after", diff)
-                resolve(EncryptionResult.SUCCESS)
+                resolve(true)
             }).catch(e => {
                 const diff = prettyMS(getTime() - start)
                 currLog.error("💥 Couldn't add key", e.message, "after", diff)
 
-                resolve(EncryptionResult.ERROR)
+                resolve(false)
             })
         });
     }
@@ -82,9 +68,13 @@ export class EncryptionKeyConstruct {
         const res = await this.repo.findOne({ username })
         return res ? true : false
     }
-}
 
-export enum EncryptionResult {
-    SUCCESS,
-    ERROR
+    public async getExpired() {
+        console.log("time", new Date(getTime()))
+        return this.repo.find({
+            where: {
+                expiresAt: LessThanOrEqual(new Date(getTime()))
+            }
+        })
+    }
 }

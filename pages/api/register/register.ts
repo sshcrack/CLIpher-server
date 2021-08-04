@@ -5,7 +5,7 @@ import { BCrypt } from '../../../tools/crypto/BCrypt'
 import { RSA } from '../../../tools/crypto/RSA'
 import { UserRepoResult } from '../../../tools/database/constructs/userConstruct'
 import { Global } from '../../../tools/global'
-import { APIError } from '../../../tools/interfaces/APIInterfaces'
+import { APIError, FieldLength } from '../../../tools/interfaces/APIInterfaces'
 import { GeneralError } from '../../../tools/interfaces/error-codes'
 import HttpStatusCode from '../../../tools/interfaces/status-codes'
 import { Logger } from '../../../tools/logger'
@@ -22,7 +22,9 @@ export default async function handler(
 ) {
   const userIP = getIP(req)
   const { username, password } = req.body ?? {}
-  const { User, EncryptionKey } = await Global.getDatabase()
+  const { User, EncryptionKey } = await Global.getDatabase() ?? {}
+  if (!User || !EncryptionKey)
+    return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
 
   const isRateLimited = await RateLimit.consume(ConsumeType.Register, req, res)
   if (isRateLimited)
@@ -43,11 +45,11 @@ export default async function handler(
     checks: [
       {
         name: "username",
-        maxLength: 32
+        maxLength: FieldLength.USERNAME
       },
       {
         name: "password",
-        maxLength: 128
+        maxLength: FieldLength.USERNAME
       }
     ],
     typeCheck: [

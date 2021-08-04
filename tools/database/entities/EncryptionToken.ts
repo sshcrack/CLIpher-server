@@ -11,7 +11,7 @@ export class EncryptionKeySQL {
     @Column()
     privateKey: string
 
-    @Column()
+    @Column({ type: "timestamp with time zone" })
     expiresAt: Date
 
     @Column()
