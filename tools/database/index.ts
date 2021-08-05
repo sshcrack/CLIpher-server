@@ -14,6 +14,7 @@ import { UserSQL } from "./entities/User";
 import { LoginTokenSQL } from "./entities/LoginToken";
 import { AccessTokenSQL } from './entities/AccessToken';
 import { resolveHref } from 'next/dist/next-server/lib/router/router';
+import { Scheduler } from '../scheduler';
 
 
 
@@ -116,6 +117,10 @@ export class Database {
 
         const diffRepo = prettyMS(getTime() - startRepo)
         log.success(`📕 Repositories initialized after ${diffRepo}`)
+
+        log.await("Starting scheduler...")
+        Scheduler.schedule(this)
+
         return this.connection
     }
 }

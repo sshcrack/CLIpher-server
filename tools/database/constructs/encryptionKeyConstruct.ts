@@ -1,18 +1,15 @@
 //* Always import reflect-metadata when working with db stuff
-import "reflect-metadata";
-
 import { nanoid } from 'nanoid';
 import prettyMS from 'pretty-ms';
-import { FindOperator, LessThanOrEqual, MoreThanOrEqual, Repository } from "typeorm";
+import "reflect-metadata";
+import { Repository } from "typeorm";
 import { Logger } from '../../logger';
-import { getKeyExpiration, getTime } from "../../util";
+import { getTime } from "../../util";
 import { EncryptionKeySQL } from "../entities/EncryptionToken";
 
 
+
 const log = Logger.getLogger("Repository", "EncryptionKey")
-const tokenExpiration = getKeyExpiration()
-
-
 export class EncryptionKeyConstruct {
     private repo: Repository<EncryptionKeySQL>
 
@@ -69,11 +66,13 @@ export class EncryptionKeyConstruct {
         return res ? true : false
     }
 
-    public async getExpired() {
-        return this.repo.find({
-            where: {
-                expiresAt: LessThanOrEqual(new Date())
-            }
-        })
+    public deleteExpired() {
+        return this
+            .repo
+            .createQueryBuilder()
+            .delete()
+            .from(EncryptionKeySQL)
+            .where("expiresAt <= :expiresAt", { expiresAt: new Date() })
+            .execute()
     }
 }

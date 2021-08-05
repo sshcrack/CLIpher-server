@@ -3,18 +3,13 @@ import prettyMS from 'pretty-ms';
 import { FindConditions, ObjectID, Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { Logger } from '../../logger';
-import { getLoginTokenExpiration, getTime } from '../../util';
+import { getTime } from '../../util';
 import { LoginTokenSQL } from '../entities/LoginToken';
-import { UserSQL } from '../entities/User';
 
 const log = Logger.getLogger("Repository", "LoginToken")
-const tokenExpiration = getLoginTokenExpiration()
 
 export class LoginTokenConstruct {
     private repo: Repository<LoginTokenSQL>
-
-    //Ids of scheduled token removal functions
-    private TimeoutIDs: { [key: string]: NodeJS.Timeout } = {}
 
     constructor(repo: Repository<LoginTokenSQL>) {
         this.repo = repo;
@@ -98,6 +93,16 @@ export class LoginTokenConstruct {
             currLog.error("💥 Failed to delete login token after", diff)
 
         return successful
+    }
+
+    public deleteExpired() {
+        return this
+            .repo
+            .createQueryBuilder()
+            .delete()
+            .from(LoginTokenSQL)
+            .where("expiresAt <= :expiresAt", { expiresAt: new Date() })
+            .execute()
     }
 }
 

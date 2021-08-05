@@ -3,19 +3,14 @@ import prettyMS from 'pretty-ms';
 import { FindConditions, ObjectID, Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { Logger } from '../../logger';
-import { getLoginTokenExpiration, getTime } from '../../util';
+import { getTime } from '../../util';
 import { AccessTokenSQL } from '../entities/AccessToken';
 import { LoginTokenSQL } from '../entities/LoginToken';
-import { UserSQL } from '../entities/User';
 
 const log = Logger.getLogger("Repository", "LoginToken")
-const tokenExpiration = getLoginTokenExpiration()
 
 export class AccessTokenConstruct {
     private repo: Repository<AccessTokenSQL>
-
-    //Ids of scheduled token removal functions
-    private TimeoutIDs: { [key: string]: NodeJS.Timeout } = {}
 
     constructor(repo: Repository<AccessTokenSQL>) {
         this.repo = repo;
@@ -99,6 +94,16 @@ export class AccessTokenConstruct {
             currLog.error("💥 Failed to delete access token after", diff)
 
         return successful
+    }
+
+    public deleteExpired() {
+        return this
+            .repo
+            .createQueryBuilder()
+            .delete()
+            .from(AccessTokenSQL)
+            .where("expiresAt <= :expiresAt", { expiresAt: new Date() })
+            .execute()
     }
 }
 
