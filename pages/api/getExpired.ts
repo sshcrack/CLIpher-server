@@ -12,7 +12,7 @@ export default async function handler(
     if (!EncryptionKey)
         return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
 
-    const expired = EncryptionKey.getExpired()
+    const expired = await EncryptionKey.getExpired()
 
     res.json(expired)
 }

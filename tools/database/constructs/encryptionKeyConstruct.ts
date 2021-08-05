@@ -3,7 +3,7 @@ import "reflect-metadata";
 
 import { nanoid } from 'nanoid';
 import prettyMS from 'pretty-ms';
-import { FindOperator, LessThanOrEqual, Repository } from "typeorm";
+import { FindOperator, LessThanOrEqual, MoreThanOrEqual, Repository } from "typeorm";
 import { Logger } from '../../logger';
 import { getKeyExpiration, getTime } from "../../util";
 import { EncryptionKeySQL } from "../entities/EncryptionToken";
@@ -70,10 +70,9 @@ export class EncryptionKeyConstruct {
     }
 
     public async getExpired() {
-        console.log("time", new Date(getTime()))
         return this.repo.find({
             where: {
-                expiresAt: LessThanOrEqual(new Date(getTime()))
+                expiresAt: LessThanOrEqual(new Date())
             }
         })
     }
