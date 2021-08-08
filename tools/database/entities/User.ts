@@ -7,9 +7,6 @@ export class UserSQL {
     @Column({ comment: "User's hashed password by bcrypt"})
     hashedPassword: string
 
-    @Column({comment: "The iv that was used to encrypt the 2FA Secret"})
-    iv: string
-
     @Column({comment: "This is the encrypted 2FA Secret of this user (encrypted with the password of him)"})
     TFASecret: string
 

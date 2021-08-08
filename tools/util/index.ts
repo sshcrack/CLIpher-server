@@ -1,3 +1,4 @@
+import { start } from 'microjob';
 import nerdamer from "nerdamer";
 import { NextApiRequest, NextApiResponse } from "next";
 import { RateLimiterRes } from "rate-limiter-flexible";
@@ -107,4 +108,15 @@ export function setHeaders<T extends string, K extends string | number, X>(heade
     }
 
     return currentRes
+}
+
+let startingProm: Promise<void> | undefined = undefined;
+export function startWorkers() {
+    if (startingProm)
+        return startingProm
+
+    const maxWorkers = parseInt(process.env.MAX_WORKERS ?? "15")
+    startingProm = start({ maxWorkers: maxWorkers })
+
+    return startingProm
 }

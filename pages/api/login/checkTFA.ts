@@ -80,7 +80,7 @@ export default async function handler(
 
 
   const encryptedTFA = user.TFASecret
-  const TFASecret = await AES.decrypt({ encrypted: encryptedTFA, iv: user.iv, password: decryptedPassword })
+  const TFASecret = await AES.decrypt({ encrypted: encryptedTFA, password: decryptedPassword })
   if (!TFASecret)
     return sendErrorResponse(res, GeneralError.CANT_DECRYPT_TFA_SECRET)
 

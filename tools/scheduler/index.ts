@@ -32,7 +32,13 @@ export class Scheduler {
             ]
 
             Promise.all(proms)
-                .then(e => log.success("🚧 Deleted", e.reduce((a, b) => a + (b?.affected ?? 0), 0), "expired tokens!"))
+                .then(e => {
+                    const total = e.reduce((a, b) => a + (b?.affected ?? 0), 0)
+                    if (total === 0)
+                        return
+
+                    log.success("🚧 Deleted", total, "expired tokens!")
+                })
                 .catch(e => log.warn("💥 Couldn't delete expired tokens. Error:", e))
 
             this.taskRunning = false

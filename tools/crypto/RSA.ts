@@ -1,10 +1,10 @@
+import { job } from 'microjob';
 import { nanoid } from "nanoid";
 import { pki } from "node-forge";
-import Parallel from "paralleljs";
 import prettyMS from "pretty-ms";
 import { Global } from '../global';
 import { Logger } from '../logger';
-import { getTime } from '../util';
+import { getTime, startWorkers } from '../util';
 
 const log = Logger.getLogger("Crypto", "RSA")
 const rsa = pki.rsa
@@ -14,6 +14,7 @@ type PEMOutput = {
     privateKey: string
 }
 
+const startProm = startWorkers()
 export class RSA {
     /**
      * Decrypt a string using a private key
@@ -21,22 +22,22 @@ export class RSA {
      * @param privateKeyPEM PEM formatted private key
      * @returns The decrypted string
      */
-    static decrypt(encrypted: string, privateKeyPEM: string): Promise<string | undefined> {
-        return new Promise(resolve => {
-            const cached = Global.cache.get<string | undefined>(`rsa-decrypted-${encrypted}`)
-            if (cached)
-                return resolve(cached)
+    static async decrypt(encrypted: string, privateKeyPEM: string): Promise<string | undefined> {
+        await startProm
 
-            const worker = new Parallel([encrypted, privateKeyPEM]);
+        const cached = Global.cache.get<string | undefined>(`rsa-decrypted-${encrypted}`)
+        if (cached)
+            return cached
 
-            const currLog = log.scope(nanoid())
-            const start = getTime()
+        const currLog = log.scope(nanoid())
+        const start = getTime()
 
-            currLog.await(`🕒 Decrypting...`)
-            worker.spawn(item => {
+        currLog.await(`🕒 Decrypting...`)
+        try {
+            const decrypted = await job(data => {
                 const { pki } = eval(`require("node-fetch")`)
 
-                const [encrypted, privateKeyPEM] = item
+                const [encrypted, privateKeyPEM] = data
                 const privateKey = pki.privateKeyFromPem(privateKeyPEM)
 
                 let decrypted: string
@@ -47,36 +48,34 @@ export class RSA {
                     throw new Error(err)
                 }
 
-                return [decrypted]
-            }).then(result => {
-                let [decrypted] = result
-                const diff = prettyMS(getTime() - start)
+                return decrypted
+            }, { data: [encrypted, privateKeyPEM] })
+            const diff = prettyMS(getTime() - start)
+            Global.cache.set(`rsa-decrypted-${encrypted}`, decrypted)
 
-                Global.cache.set(`rsa-decrypted-${encrypted}`, decrypted)
-                currLog.success(`🔑 Decrypted successfully after ${diff}`)
-                resolve(decrypted)
-            }, err => {
-                const diff = prettyMS(getTime() - start)
+            currLog.success(`🔑 Decrypted successfully after ${diff}`)
+            return decrypted
+        } catch (err) {
+            const diff = prettyMS(getTime() - start)
 
-                currLog.error(`💥 Decryption failed after ${diff} Error: ${err.message}`)
-                resolve(undefined)
-            })
-        })
+            currLog.error(`💥 Decryption failed after ${diff} Error: ${err.message}`)
+            return undefined
+        }
     }
 
-    static encrypt(message: string, publicKeyPEM: string) {
-        return new Promise(resolve => {
-            const worker = new Parallel([message, publicKeyPEM])
+    static async encrypt(message: string, publicKeyPEM: string) {
+        await startProm
+        const currLog = log.scope(nanoid())
+        const start = getTime()
 
-            const currLog = log.scope(nanoid())
-            const start = getTime()
-
-            currLog.await(`🕒 Encrypting Key...`)
-            worker.spawn(item => {
+        currLog.await(`🕒 Encrypting Key...`)
+        try {
+            const encrypted = await job(item => {
                 const { pki } = eval(`require("node-fetch")`)
                 const [message, publicKeyPEM] = item
-
                 const publicKey = pki.publicKeyFromPem(publicKeyPEM)
+
+
                 let encrypted: string
                 try {
                     encrypted = publicKey.encrypt(message)
@@ -84,20 +83,18 @@ export class RSA {
                     throw new Error(err)
                 }
 
-                return [encrypted]
-            }).then(result => {
-                const [encrypted] = result
-                const diff = prettyMS(getTime() - start)
+                return encrypted
+            }, { data: [message, publicKeyPEM] })
+            const diff = prettyMS(getTime() - start)
 
-                currLog.success(`🔑 Encryption successfully after ${diff}`)
-                resolve(encrypted)
-            }, err => {
-                const diff = prettyMS(getTime() - start)
+            currLog.success(`🔑 Encryption successfully after ${diff}`)
+            return encrypted
+        } catch (err) {
+            const diff = prettyMS(getTime() - start)
 
-                currLog.error(`💥 Encryption failed after ${diff} Error: ${err.message}`)
-                resolve(undefined)
-            })
-        })
+            currLog.error(`💥 Encryption failed after ${diff} Error: ${err.message}`)
+            return undefined
+        }
     }
 
     /**

@@ -1,8 +1,7 @@
+import NodeCache from "node-cache";
 import { Connection } from 'typeorm';
 import { Database } from "./database";
 import { Logger } from './logger';
-import NodeCache from "node-cache"
-import { Scheduler } from './scheduler';
 
 export class Global {
     static _database: Database | undefined

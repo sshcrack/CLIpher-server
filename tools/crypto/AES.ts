@@ -1,130 +1,80 @@
+import { job } from "microjob";
 import { nanoid } from 'nanoid';
-import Parallel from "paralleljs";
 import prettyMS from 'pretty-ms';
 import { Global } from '../global';
 import { Logger } from '../logger';
-import { getTime } from '../util';
+import { getTime, startWorkers } from '../util';
 
 const log = Logger.getLogger("Crypto", "AES");
+const startProm = startWorkers()
 export class AES {
-    static keySize = 32
-
-    static generateIV(): Promise<string | undefined> {
-        return new Promise(resolve => {
-            const start = getTime()
-            const currLog = log.scope(nanoid())
-            currLog.await("🕒 Generating IV...")
-
-            const worker = new Parallel(JSON.stringify(AES.keySize))
-            worker.spawn(item => {
-                const { random } = eval(`require("node-forge")`)
-
-                const iv = random.getBytesSync(JSON.parse(item))
-                return iv
-            }).then(result => {
-                const diff = prettyMS(getTime() - start)
-                currLog.success(`🚕 IV Generated after ${diff}`)
-
-                resolve(result)
-            }, err => {
-                const diff = prettyMS(getTime() - start)
-                currLog.error(`💥 Failed to generate IV after ${diff}. Error:`, err.message)
-
-                resolve(undefined)
-            })
-
-        });
-    }
-
     static async encrypt(options: EncryptOptions): Promise<string | undefined> {
-        return new Promise(resolve => {
-            const currLog = log.scope(nanoid())
-            const start = getTime()
+        await startProm
+        const currLog = log.scope(nanoid())
+        const start = getTime()
 
-            const worker = new Parallel([
-                options.plain,
-                options.password,
-                options.iv,
-            ])
 
-            currLog.await("🕒 Encrypting key using AES...")
-            worker.spawn(item => {
-                const { cipher, util } = eval(`require("node-forge")`)
-                const [plain, password, iv] = item
+        currLog.await("🕒 Encrypting key using AES...")
+        try {
+            const res = await job(data => {
+                const { AESEncryption } = eval(`require("aes-password")`)
+                const { plain, password } = data
 
-                const created = cipher.createCipher('AES-CBC', password)
+                const output = AESEncryption.encrypt(plain, password)
+                return output
+            }, { data: options })
+            const diff = prettyMS(getTime() - start)
 
-                created.start({ iv: iv })
-                created.update(util.createBuffer(plain))
-                created.finish()
+            currLog.success(`🔑 Encryption took ${diff}`)
+            return res
+        } catch (err) {
+            const diff = prettyMS(getTime() - start)
+            currLog.error(`💥 Encryption failed after ${diff} Error:`, err.message)
 
-                const output = created.output.toString()
-                return [output]
-            }).then(result => {
-                const diff = prettyMS(getTime() - start)
-                currLog.success(`🔑 Encryption took ${diff}5`)
-
-                resolve(result[0])
-            }, err => {
-                const diff = prettyMS(getTime() - start)
-                currLog.error(`💥 Encryption failed after ${diff} Error:`, err.message)
-
-                resolve(undefined)
-            })
-        });
+            return undefined
+        }
     }
 
     static async decrypt(options: DecryptOptions): Promise<string | undefined> {
-        return new Promise(resolve => {
-            const cached = Global.cache.get<string | undefined>(`aes-decrypted-${options.encrypted}-${options.iv}`)
-            if (cached)
-                return resolve(cached)
+        await startProm;
+        const cached = Global.cache.get<string | undefined>(`aes-decrypted-${options.encrypted}`)
+        if (cached)
+            return cached
 
-            const currLog = log.scope(nanoid())
-            const worker = new Parallel([
-                options.encrypted,
-                options.password,
-                options.iv,
-            ])
+        const currLog = log.scope(nanoid())
 
-            currLog.await("🔑 Encrypting key...")
-            const start = getTime()
-            worker.spawn(item => {
-                const { cipher, util } = eval(`require("node-forge")`)
-                const [encrypted, key, iv] = item
+        currLog.await("🔑 Decrypting key...")
+        const start = getTime()
 
-                const created = cipher.createCipher('AES-CBC', key)
+        try {
+            const res = await job(data => {
+                const { AESEncryption } = eval(`require("aes-password")`)
+                const { encrypted, password } = data
 
-                created.start({ iv: iv })
-                created.update(util.createBuffer(encrypted))
-                created.finish()
+                const text = AESEncryption.decrypt(encrypted, password);
+                return text
+            }, { data: options })
+            const diff = prettyMS(getTime() - start)
 
-                const output = created.output.toString()
-                return [output]
-            }).then(result => {
-                const end = new Date().getTime()
-                currLog.success(`🔑 Encryption took ${end - start}ms`)
+            currLog.success(`🔑 Decryption took ${diff}ms`)
 
-                Global.cache.set(`aes-decrypted-${options.encrypted}-${options.iv}`, result[0])
-                resolve(result[0])
-            }, err => {
-                const end = new Date().getTime()
-                currLog.error(`💥 Encryption failed after ${end - start}ms Error:`, err.message)
+            Global.cache.set(`aes-decrypted-${options.encrypted}`, res)
+            return res
+        } catch (err) {
+            const diff = prettyMS(getTime() - start)
+            currLog.error(`💥 Encryption failed after ${diff}ms Error:`, err.message)
 
-                resolve(undefined)
-            })
-        });
+            return undefined
+        }
     }
 }
 
 export interface EncryptOptions {
     plain: string,
-    password: string,
-    iv: string
+    password: string
 }
 
 export interface DecryptOptions {
     encrypted: string,
-    password: string,
-    iv: string
+    password: string
 }

@@ -78,7 +78,6 @@ export default async function handler(
         ??
         await AES.decrypt({
             encrypted: user.TFASecret,
-            iv: user.iv,
             password: decryptedPassword
         })
 
