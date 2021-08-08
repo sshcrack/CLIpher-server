@@ -21,7 +21,6 @@
     "crypto-random-string": "^4.0.0",
     "debug": "^4.3.2",
     "dotenv-webpack": "^7.0.3",
-    "fibers": "^5.0.0",
     "glob": "^7.1.7",
     "microjob": "^0.7.0",
     "nanoid": "^3.1.23",
@@ -50,7 +49,6 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
     "@types/debug": "^4.1.7",
-    "@types/fibers": "^3.1.1",
     "@types/math-expression-evaluator": "^1.2.1",
     "@types/node-cron": "^2.0.4",
     "@types/node-forge": "^0.10.2",
