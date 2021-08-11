@@ -115,7 +115,7 @@ export function startWorkers() {
     if (startingProm)
         return startingProm
 
-    console.log("Starting game")
+    log.info("Starting workers...")
     const maxWorkers = parseInt(process.env.MAX_WORKERS ?? "15")
     startingProm = start({ maxWorkers: maxWorkers })
 

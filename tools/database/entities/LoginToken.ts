@@ -12,7 +12,7 @@ export class LoginTokenSQL {
     token: string
 
     @Column()
-    encryptedPassword: string
+    encryptedPasswordHex: string
 
     @Column({ type: "timestamp with time zone" })
     expiresAt: Date

@@ -21,8 +21,8 @@ export default async function handler(
   res: NextApiResponse<CheckTFAResponse | APIError>
 ) {
   const { loginToken: givenToken, otp } = req.body ?? {}
-  const { User, LoginToken } = await Global.getDatabase() ?? {}
-  if(!User || !LoginToken)
+  const { User, LoginToken, AccessToken } = await Global.getDatabase() ?? {}
+  if (!User || !LoginToken)
     return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
 
   const isRateLimited = await RateLimit.consume(ConsumeType.CheckTFA, req, res)
@@ -60,14 +60,15 @@ export default async function handler(
   if (!validRequest)
     return
 
-  const { encryptedPassword, token, username } = await LoginToken.get(givenToken) ?? {}
-  if (!token || !encryptedPassword || !username)
+  const { encryptedPasswordHex, token, username } = await LoginToken.get(givenToken) ?? {}
+  if (!token || !encryptedPasswordHex || !username)
     return sendErrorResponse(res, GeneralError.INVALID_LOGIN_TOKEN)
 
   const user = await User.get(username)
   if (!user)
     return sendErrorResponse(res, GeneralError.LOGIN_TOKEN_USER_NOT_FOUND)
 
+  const encryptedPassword = Buffer.from(encryptedPasswordHex, 'hex')
   const decryptedPassword = await RSA.decrypt(encryptedPassword, user.privateKey)
   if (!decryptedPassword)
     return sendErrorResponse(res, GeneralError.CANT_DECRYPT_PASSWORD)
@@ -90,5 +91,5 @@ export default async function handler(
 
 
   const accessToken = Token.generate()
-  
+  //TODO Add access token here
 }

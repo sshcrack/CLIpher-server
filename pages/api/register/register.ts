@@ -20,8 +20,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<RegisterResponse | APIError>
 ) {
+  //! IMPORTANT:
+  //! PASSWORD IN HEX FORMAT
+
+
   const userIP = getIP(req)
-  const { username, password } = req.body ?? {}
+  const { username, password: passwordHex } = req.body ?? {}
   const { User, EncryptionKey } = await Global.getDatabase() ?? {}
   if (!User || !EncryptionKey)
     return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
@@ -49,7 +53,7 @@ export default async function handler(
       },
       {
         name: "password",
-        maxLength: FieldLength.USERNAME
+        maxLength: FieldLength.PASSWORD
       }
     ],
     typeCheck: [
@@ -83,6 +87,7 @@ export default async function handler(
   //!
 
   log.info("🔑 Decrypting password...")
+  const password = Buffer.from(passwordHex, "hex");
   const decryptedPassword = await decryptPassword(password, token.privateKey)
   if (!decryptedPassword)
     return
@@ -97,8 +102,8 @@ export default async function handler(
   if (!privateKey || !publicKey)
     return;
 
-  const { TFASecret, EncryptedTFA, iv } = await generateTFA(res, decryptedPassword) ?? {}
-  if (!TFASecret || !EncryptedTFA || !iv)
+  const { TFASecret, EncryptedTFA } = await generateTFA(res, decryptedPassword) ?? {}
+  if (!TFASecret || !EncryptedTFA)
     return
 
 
@@ -108,7 +113,6 @@ export default async function handler(
     hashedPassword: hashedPassword,
     publicKey: publicKey,
     TFASecret: EncryptedTFA,
-    iv: iv,
     username: username,
     TFAVerified: false,
   })
@@ -132,14 +136,12 @@ export default async function handler(
   }
 
   async function generateTFA<T>(res: NextApiResponse<T | APIError>, pass: string) {
-    const iv = await AES.generateIV()
     const TFASecret = authenticator.generateSecret()
 
-    if (!iv || !TFASecret)
+    if (!TFASecret)
       return sendErrorResponse(res, GeneralError.CANT_GENERATE_TFA_SECRET)
 
     const encryptedSecret = await AES.encrypt({
-      iv: iv,
       plain: TFASecret,
       password: pass
     })
@@ -149,8 +151,7 @@ export default async function handler(
 
     return {
       TFASecret: TFASecret,
-      EncryptedTFA: encryptedSecret,
-      iv: iv
+      EncryptedTFA: encryptedSecret
     }
   }
 
@@ -165,7 +166,7 @@ export default async function handler(
     }
   }
 
-  async function decryptPassword(password: string, privateKey: string) {
+  async function decryptPassword(password: Buffer, privateKey: string) {
     const decryptedPassword = await RSA.decrypt(password, privateKey)
 
     if (!decryptedPassword)

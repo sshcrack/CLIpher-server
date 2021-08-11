@@ -16,7 +16,7 @@ export class Global {
         if (this._prom)
             await this._prom
 
-        if (this._database)
+        if (this._database && this._database?.isConnected())
             return this._database
 
         const database = new Database()

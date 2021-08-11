@@ -15,7 +15,7 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse<LoginResponse | APIError>
 ) {
-    const { username, encryptedPassword } = req.body ?? {}
+    const { username, password: passwordHex } = req.body ?? {}
     const { User, LoginToken } = await Global.getDatabase() ?? {}
     if(!User || !LoginToken)
         return sendErrorResponse(res, GeneralError.DB_CONNECTION_NOT_AVAILABLE)
@@ -28,7 +28,7 @@ export default async function handler(
         method: "POST",
         requiredFields: [
             "username",
-            "encryptedPassword"
+            "password"
         ],
         checks: [
             {
@@ -36,7 +36,7 @@ export default async function handler(
                 maxLength: FieldLength.USERNAME
             },
             {
-                name: "encryptedPassword",
+                name: "password",
                 maxLength: FieldLength.PASSWORD
             }
         ],
@@ -46,7 +46,7 @@ export default async function handler(
                 type: "string"
             },
             {
-                name: "encryptedPassword",
+                name: "password",
                 type: "string"
             }
         ]
@@ -59,7 +59,8 @@ export default async function handler(
     if (!user)
         return sendErrorResponse(res, GeneralError.INVALID_CREDENTIALS)
 
-    const decryptedPassword = await RSA.decrypt(encryptedPassword, user.privateKey)
+    const password = Buffer.from(passwordHex, 'hex')
+    const decryptedPassword = await RSA.decrypt(password, user.privateKey)
     if (!decryptedPassword)
         return sendErrorResponse(res, GeneralError.CANT_DECRYPT_PASSWORD)
 
@@ -75,7 +76,7 @@ export default async function handler(
     const addResult = await LoginToken.add({
         username: username,
         token: loginToken,
-        encryptedPassword: encryptedPassword,
+        encryptedPasswordHex: passwordHex,
         expiresAt: new Date(expiration)
     })
 

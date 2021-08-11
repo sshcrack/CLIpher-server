@@ -31,13 +31,17 @@ const {
  * @description Datbase class to interact with the database
  */
 export class Database {
-    private connectionPromise: Promise<Connection | undefined>
-    private connection: Connection | void
+    public _connectionPromise: Promise<Connection | undefined>
+    public _connection: Connection | void
 
     public EncryptionKey: EncryptionKeyConstruct;
     public LoginToken: LoginTokenConstruct;
     public AccessToken: AccessTokenConstruct;
     public User: UserConstruct;
+
+    public isConnected() {
+        return this._connection?.isConnected;
+    }
 
     /**
      * Establishes a connection to the database or returns the existing connection
@@ -45,13 +49,13 @@ export class Database {
      * @returns a connection to the database
      */
     async getConnection() {
-        if (this.connectionPromise) {
+        if (this._connectionPromise) {
             log.await("⏰ There's already a connection in process. Waiting for it to finish")
-            await this.connectionPromise
+            await this._connectionPromise
         }
 
         const prom = this.getConnectionPromise()
-        this.connectionPromise = prom;
+        this._connectionPromise = prom;
 
         const res = await prom;
         return res;
@@ -62,8 +66,8 @@ export class Database {
      * @returns A promise of the conn
      */
     private async getConnectionPromise() {
-        if (this.connection)
-            return this.connection
+        if (this._connection)
+            return this._connection
 
         let oldConnection: Connection | undefined;
         try {
@@ -80,7 +84,7 @@ export class Database {
         const start = getTime()
 
         log.await("⏱ Establishing connection...")
-        this.connection = await createConnection({
+        this._connection = await createConnection({
             type: DATABASE_TYPE ?? "postgres" as any,
             host: DATABASE_HOST ?? "localhost",
             port: parseInt(DATABASE_PORT ?? "5432"),
@@ -93,7 +97,7 @@ export class Database {
             entities: [UserSQL, EncryptionKeySQL, LoginTokenSQL, AccessTokenSQL]
         }).catch(e => log.fatal("💥 Database connection failed", e.message))
 
-        if (!this.connection)
+        if (!this._connection)
             return undefined
 
         const diff = prettyMS(getTime() - start)
@@ -121,6 +125,6 @@ export class Database {
         log.await("Starting scheduler...")
         Scheduler.schedule(this)
 
-        return this.connection
+        return this._connection
     }
 }

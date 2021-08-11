@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import prettyMS from 'pretty-ms';
 import "reflect-metadata";
 import { Repository } from "typeorm";
+import { Global } from '../../global';
 import { Logger } from '../../logger';
 import { getTime } from "../../util";
 import { EncryptionKeySQL } from "../entities/EncryptionToken";
@@ -72,7 +73,7 @@ export class EncryptionKeyConstruct {
             .createQueryBuilder()
             .delete()
             .from(EncryptionKeySQL)
-            .where("expiresAt <= :expiresAt", { expiresAt: new Date() })
+            .where("expiresAt <= :now", { now: new Date() })
             .execute()
     }
 }
