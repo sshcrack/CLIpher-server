@@ -35,7 +35,7 @@ export class RSA {
         currLog.await(`🕒 Decrypting...`)
         try {
             const decrypted = await job(data => {
-                const { pki } = eval(`require("node-fetch")`)
+                const { pki } = eval(`require("node-forge")`)
 
                 const [encrypted, privateKeyPEM] = data
                 const privateKey = pki.privateKeyFromPem(privateKeyPEM)
@@ -71,7 +71,7 @@ export class RSA {
         currLog.await(`🕒 Encrypting Key...`)
         try {
             const encrypted = await job(item => {
-                const { pki } = eval(`require("node-fetch")`)
+                const { pki } = eval(`require("node-forge")`)
                 const [message, publicKeyPEM] = item
                 const publicKey = pki.publicKeyFromPem(publicKeyPEM)
 

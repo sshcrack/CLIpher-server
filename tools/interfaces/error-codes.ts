@@ -3,7 +3,6 @@ export enum FormattedError {
     INVALID_BODY_LENGTH = -2,
     METHOD_NOT_ALLOWED = -3,
     RATE_LIMITED = -4,
-    USER_EXISTS = -5,
     INVALID_TYPES = -5
 }
 
